@@ -30,7 +30,7 @@ L'application est construite avec **Vite**, **React** et **Lucide-React**.
 
 ### Installation
 ```bash
-git clone https://github.com/votre-compte/reptil-track.git
+git clone https://github.com/digitalsaurien-git/digitalsaurien-dep.git
 cd reptil-track
 npm install
 ```
