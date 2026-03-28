@@ -18,6 +18,7 @@ export function getPlaceholderImage(animal) {
   else if (text.includes("serpent") || text.includes("snake") || text.includes("python") || text.includes("boa")) keyword = "snake";
   else if (text.includes("leachianus") || text.includes("gecko géant")) keyword = "giant-gecko";
   else if (text.includes("chamaeleo") || text.includes("caméléon")) keyword = "chameleon";
+  else if (text.includes("drymarchon") || text.includes("indigo")) keyword = "indigo-snake";
   else keyword = "reptile"; // Unsplash 'reptile' to avoid 'tiger' fallback
 
   // Using a more reliable sig format
