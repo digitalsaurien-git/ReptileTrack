@@ -16,7 +16,10 @@ export function Layout() {
       <nav className="sidebar glass-panel">
         <div className="logo">
           <Snake color="var(--primary)" size={32} />
-          <h2>ReptilTrack</h2>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <h2 style={{ margin: 0, lineHeight: 1 }}>ReptilTrack</h2>
+            <span style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 600, opacity: 0.8, letterSpacing: '0.05em', marginTop: '0.2rem' }}>EDITION V2.1</span>
+          </div>
         </div>
         
         <ul className="nav-links">
