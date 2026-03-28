@@ -181,7 +181,7 @@ export function Terrariums() {
                       >
                         <option value="" disabled>Associer un matériel existant...</option>
                         {availableEquipments.map(eq => (
-                          <option key={eq.id} value={eq.id}>{eq.name} ({eq.watts}W)</option>
+                          <option key={eq.id} value={eq.id}>{eq.brand ? `${eq.brand.toUpperCase()} - ` : ''}{eq.name} ({eq.watts}W)</option>
                         ))}
                       </select>
                     </div>

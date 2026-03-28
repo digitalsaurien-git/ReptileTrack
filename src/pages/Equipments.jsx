@@ -11,9 +11,14 @@ export function Equipments() {
     setEquipments([{
       id: newId,
       name: 'Nouvel équipement',
+      brand: '',
       type: 'lampe_chauffante',
       watts: 50,
       hoursPerDay: 12,
+      purchasePrice: 0,
+      salePrice: 0,
+      purchaseDate: new Date().toISOString().split('T')[0],
+      replacementFreq: 6, // mois par défaut
       terrariumId: '',
       serialNumber: ''
     }, ...equipments]);
@@ -143,23 +148,39 @@ export function Equipments() {
                 <div key={eq.id} className="glass-card" style={{ cursor: 'default', padding: '2rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
-                      <div style={{ background: 'rgba(78, 222, 163, 0.1)', padding: '0.6rem', borderRadius: '10px' }}>
+                      <div style={{ background: 'rgba(78, 222, 163, 0.1)', padding: '0.6rem', borderRadius: '10px', position: 'relative' }}>
                         <Plug size={20} color="var(--primary)" />
+                        {(() => {
+                           const nextDate = eq.purchaseDate ? new Date(new Date(eq.purchaseDate).setMonth(new Date(eq.purchaseDate).getMonth() + (eq.replacementFreq || 6))) : null;
+                           const isDue = nextDate && nextDate < new Date();
+                           return isDue ? (
+                             <div title="Maintenance requise !" style={{ position: 'absolute', top: '-5px', right: '-5px', background: 'var(--danger)', borderRadius: '50%', width: '12px', height: '12px', border: '1px solid #fff' }}></div>
+                           ) : null;
+                        })()}
                       </div>
                       <div style={{ flex: 1 }}>
-                        <input 
-                          type="text" 
-                          value={eq.name} 
-                          placeholder="Nom (Modèle)"
-                          onChange={e => updateEquipment(eq.id, 'name', e.target.value)}
-                          style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-light)', fontWeight: 600, fontSize: '1rem', color: '#fff', padding: '0.5rem 0.75rem', borderRadius: '6px', width: '90%' }}
-                        />
+                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                          <input 
+                            type="text" 
+                            value={eq.brand || ''} 
+                            placeholder="Marque (Ex: Exo Terra)"
+                            onChange={e => updateEquipment(eq.id, 'brand', e.target.value)}
+                            style={{ background: 'rgba(5, 150, 105, 0.05)', border: '1px solid var(--border-light)', fontSize: '0.75rem', color: 'var(--primary)', padding: '0.3rem 0.6rem', borderRadius: '4px', width: '40%', fontWeight: 700, textTransform: 'uppercase' }}
+                          />
+                          <input 
+                            type="text" 
+                            value={eq.name} 
+                            placeholder="Nom du modèle"
+                            onChange={e => updateEquipment(eq.id, 'name', e.target.value)}
+                            style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-light)', fontWeight: 600, fontSize: '0.95rem', color: '#fff', padding: '0.3rem 0.6rem', borderRadius: '4px', flex: 1 }}
+                          />
+                        </div>
                         <input 
                           type="text" 
                           value={eq.serialNumber || ''} 
                           placeholder="ID / N° de Série"
                           onChange={e => updateEquipment(eq.id, 'serialNumber', e.target.value)}
-                          style={{ background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-light)', fontSize: '0.75rem', color: 'var(--text-muted)', padding: '0.25rem 0.5rem', marginTop: '0.5rem', width: '120px' }}
+                          style={{ background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-light)', fontSize: '0.75rem', color: 'var(--text-muted)', padding: '0.25rem 0.5rem', width: '120px' }}
                         />
                       </div>
                     </div>
@@ -205,6 +226,53 @@ export function Equipments() {
                          ))}
                        </select>
                      </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                    <div>
+                      <label>Prix d'Achat (€)</label>
+                      <div style={{ position: 'relative' }}>
+                         <Euro size={14} style={{ position: 'absolute', left: '0.75rem', top: '1.1rem', color: 'var(--primary)', opacity: 0.6 }} />
+                         <input 
+                          type="number" 
+                          value={eq.purchasePrice || 0} 
+                          onChange={e => updateEquipment(eq.id, 'purchasePrice', parseFloat(e.target.value) || 0)}
+                          style={{ paddingLeft: '2.2rem' }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label>Date Installation</label>
+                      <div style={{ position: 'relative' }}>
+                         <Calendar size={14} style={{ position: 'absolute', left: '0.75rem', top: '1.1rem', color: 'var(--secondary)', opacity: 0.6 }} />
+                         <input 
+                          type="date" 
+                          value={eq.purchaseDate || ''} 
+                          onChange={e => updateEquipment(eq.id, 'purchaseDate', e.target.value)}
+                          style={{ paddingLeft: '2.2rem' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <label>Fréquence de changement (Mois)</label>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                      <input 
+                        type="number" 
+                        value={eq.replacementFreq || 6} 
+                        onChange={e => updateEquipment(eq.id, 'replacementFreq', parseInt(e.target.value) || 0)}
+                        style={{ width: '80px' }}
+                      />
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        🕒 Prochain changement : <strong>
+                          {eq.purchaseDate ? 
+                            new Date(new Date(eq.purchaseDate).setMonth(new Date(eq.purchaseDate).getMonth() + (eq.replacementFreq || 6))).toLocaleDateString() 
+                            : 'Non définie'
+                          }
+                        </strong>
+                      </div>
+                    </div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>

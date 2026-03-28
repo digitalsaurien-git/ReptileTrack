@@ -40,6 +40,8 @@ export function Animals() {
       chipNumber: '',
       terrariumId: null,
       status: 'vivant',
+      purchasePrice: 0,
+      salePrice: 0,
       history: [],
       documents: []
     }]);

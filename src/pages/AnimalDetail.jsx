@@ -4,7 +4,7 @@ import { useAppContext } from '../store/AppContext';
 import { 
   ChevronLeft, Save, Plus, Trash2, Camera, MapPin, 
   Bone, Activity, FileText, Info, Calendar, ClipboardList,
-  Scale, Shield, Truck, Printer
+  Scale, Shield, Truck, Printer, Euro
 } from 'lucide-react';
 import { speciesList } from '../data/species';
 import { getPlaceholderImage } from '../utils/imageUtils';

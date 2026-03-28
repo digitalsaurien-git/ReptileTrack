@@ -64,11 +64,34 @@ export function Dashboard() {
             </div>
           </div>
           <div>
-            <h2 style={{ fontSize: '1.5rem', margin: 0, color: 'var(--text-main)' }}>{formatCurrency(totalCostDay)} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>/ jour</span></h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>Estimation énergétique</p>
-            <div style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', display: 'inline-block', fontSize: '0.75rem' }}>
-              {formatCurrency(totalCostDay * 30.416)} mensuel
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>{formatCurrency(totalCostDay)} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>/ jour</span></div>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>Budget Énergie</p>
+            <div style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', display: 'inline-block', fontSize: '0.75rem', color: 'var(--warning)' }}>
+              {formatCurrency(totalCostDay * 30.416)} / mois
             </div>
+          </div>
+        </div>
+
+        <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', borderLeft: '4px solid var(--primary)', padding: '2rem', background: 'var(--primary-glow)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h4 style={{ margin: 0, color: 'var(--primary)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Bilan Financier</h4>
+            <TrendingUp size={18} color="var(--primary)" />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+             <div>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Investissement (Animaux)</p>
+                <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{animals.reduce((s, a) => s + (a.purchasePrice || 0), 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</div>
+             </div>
+             <div>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Plus-value Potentielle</p>
+                <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary)' }}>
+                  {animals.reduce((s, a) => s + ((a.salePrice || 0) - (a.purchasePrice || 0)), 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                </div>
+             </div>
+          </div>
+          <div style={{ borderTop: '1px solid var(--border-light)', marginTop: '0.5rem', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+             <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Valeur Totale du Parc Matériel</span>
+             <span style={{ fontWeight: 700 }}>{equipments.reduce((s, e) => s + (e.purchasePrice || 0), 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
           </div>
         </div>
 
