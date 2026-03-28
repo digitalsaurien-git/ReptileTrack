@@ -154,7 +154,10 @@ export function Terrariums() {
                     <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
                       {tEquipments.map(eq => (
                          <li key={eq.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '0.5rem 1rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                           <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{eq.name} <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 400 }}>({eq.watts}W)</span></span>
+                           <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                             {eq.brand && <span style={{ color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', marginRight: '0.5rem' }}>{eq.brand}</span>}
+                             {eq.name} <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 400 }}>({eq.watts}W)</span>
+                           </span>
                            <button 
                              onClick={() => detachEquipment(eq.id)}
                              title="Détacher de ce terrarium"

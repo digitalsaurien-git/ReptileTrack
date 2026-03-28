@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAppContext } from '../store/AppContext';
-import { Plus, Trash2, Plug, Zap, Euro, Clock, Activity, Copy, Tag } from 'lucide-react';
+import { Plus, Trash2, Plug, Zap, Euro, Clock, Activity, Copy, Tag, Calendar } from 'lucide-react';
 import { calculateDailyCost, formatCurrency } from '../utils/costCalculator';
 
 export function Equipments() {
