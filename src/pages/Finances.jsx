@@ -1,6 +1,7 @@
 import { useAppContext } from '../store/AppContext';
 import { calculateDailyCost, formatCurrency } from '../utils/costCalculator';
-import { Euro, TrendingUp, Zap, Snake, Home, Plug, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { Euro, TrendingUp, Zap, Home, Plug } from 'lucide-react';
+import { Snake } from '../components/icons/Snake';
 import { speciesList } from '../data/species';
 
 export function Finances() {
