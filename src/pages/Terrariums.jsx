@@ -3,6 +3,18 @@ import { useAppContext } from '../store/AppContext';
 import { Plus, Trash2, Home, Info, Wind, Zap, Plug, Link as LinkIcon } from 'lucide-react';
 import { calculateDailyCost, formatCurrency } from '../utils/costCalculator';
 
+const brands = [
+  'Habistat',
+  'Terratlantis',
+  'Exo Terra',
+  'Reptile Systems',
+  'Zoo Med',
+  'Herptek',
+  'Abistat',
+  'PVC (Sur mesure)',
+  'Verre (Standard)'
+];
+
 export function Terrariums() {
   const { terrariums, setTerrariums, equipments, setEquipments, animals, settings } = useAppContext();
   
@@ -95,7 +107,7 @@ export function Terrariums() {
                     <div style={{ position: 'relative' }}>
                       <Info size={16} style={{ position: 'absolute', left: '1rem', top: '1.1rem', color: 'var(--secondary)' }} />
                       <select 
-                        value={['Abistat', 'Herptek', 'Terra-plantis', 'Komodo'].includes(t.brand) ? t.brand : (t.brand ? 'custom' : '')} 
+                        value={brands.includes(t.brand) ? t.brand : (t.brand ? 'custom' : '')} 
                         onChange={(e) => {
                           if (e.target.value === 'custom') {
                             const custom = window.prompt("Saisir la marque du terrarium :");
@@ -107,13 +119,12 @@ export function Terrariums() {
                         style={{ paddingLeft: '2.75rem' }}
                       >
                         <option value="">-- Sélectionner --</option>
-                        <option value="Abistat">Abistat</option>
-                        <option value="Herptek">Herptek</option>
-                        <option value="Terra-plantis">Terra-plantis</option>
-                        <option value="Komodo">Komodo</option>
+                        {brands.map(b => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
                         <option value="custom">Autre (Saisir...)</option>
                       </select>
-                      {t.brand && !['Abistat', 'Herptek', 'Terra-plantis', 'Komodo'].includes(t.brand) && (
+                      {t.brand && !brands.includes(t.brand) && (
                         <p style={{ position: 'absolute', bottom: '-1.5rem', left: 0, fontSize: '0.7rem', color: 'var(--primary)' }}>Saisie libre : {t.brand}</p>
                       )}
                     </div>
