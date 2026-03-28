@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAppContext } from '../store/AppContext';
-import { Plus, Trash2, Box, Info, Wind, Zap, Plug, Link as LinkIcon } from 'lucide-react';
+import { Plus, Trash2, Home, Info, Wind, Zap, Plug, Link as LinkIcon } from 'lucide-react';
 import { calculateDailyCost, formatCurrency } from '../utils/costCalculator';
 
 export function Terrariums() {
@@ -41,10 +41,15 @@ export function Terrariums() {
   return (
     <div className="animate-fade-in">
       <header style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <p style={{ color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Espaces</p>
-          <h1 style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>Habitats</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Gérez vos terrariums, caractéristiques et matériels liés.</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ background: 'rgba(78, 222, 163, 0.1)', padding: '0.75rem', borderRadius: '12px' }}>
+            <Home size={32} color="var(--primary)" />
+          </div>
+          <div>
+            <p style={{ color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.8rem', marginBottom: '0.2rem' }}>Espaces</p>
+            <h1 style={{ fontSize: '3rem', margin: 0 }}>Habitats</h1>
+            <p style={{ color: 'var(--text-muted)' }}>Gérez vos terrariums, caractéristiques et matériels liés.</p>
+          </div>
         </div>
         <button className="btn btn-primary" onClick={handleAdd}>
           <Plus size={20} />
@@ -73,7 +78,7 @@ export function Terrariums() {
               <div style={{ flex: '1.2', minWidth: '350px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
                   <div style={{ background: 'rgba(78, 222, 163, 0.1)', padding: '0.75rem', borderRadius: '12px' }}>
-                    <Box size={24} color="var(--primary)" />
+                    <Home size={24} color="var(--primary)" />
                   </div>
                   <input 
                     type="text" 

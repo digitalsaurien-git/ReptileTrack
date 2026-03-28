@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../store/AppContext';
-import { Plus, Search, Info, ShieldCheck, AlertCircle, ChevronRight } from 'lucide-react';
+import { Plus, Search, Info, ShieldCheck, AlertCircle, ChevronRight, Home } from 'lucide-react';
+import { Snake } from '../components/icons/Snake' ;
 
 export function Animals() {
   const { animals, setAnimals } = useAppContext();
@@ -32,10 +33,15 @@ export function Animals() {
   return (
     <div className="animate-fade-in">
       <header style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <p style={{ color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.8rem', marginBottom: '0.5rem' }}>Collection</p>
-          <h1 style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>Mes Specimens</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Documentation et suivi de santé de vos reptiles.</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ background: 'rgba(78, 222, 163, 0.1)', padding: '0.75rem', borderRadius: '12px' }}>
+            <Snake size={32} color="var(--primary)" />
+          </div>
+          <div>
+            <p style={{ color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.8rem', marginBottom: '0.2rem' }}>Collection</p>
+            <h1 style={{ fontSize: '3rem', margin: 0 }}>Mes Specimens</h1>
+            <p style={{ color: 'var(--text-muted)' }}>Documentation et suivi de santé de vos reptiles.</p>
+          </div>
         </div>
         <button className="btn btn-primary" onClick={handleQuickAdd}>
           <Plus size={20} />

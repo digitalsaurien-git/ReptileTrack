@@ -1,6 +1,6 @@
 import { useAppContext } from '../store/AppContext';
 import { calculateDailyCost, formatCurrency } from '../utils/costCalculator';
-import { Zap, Box, Activity, TrendingUp } from 'lucide-react';
+import { Zap, Home, Activity, TrendingUp } from 'lucide-react';
 import { Snake } from '../components/icons/Snake';
 import { useNavigate } from 'react-router-dom';
 
@@ -40,7 +40,7 @@ export function Dashboard() {
         <div className="glass-card" onClick={() => navigate('/terrariums')} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderLeft: '4px solid var(--secondary)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{ background: 'rgba(173, 198, 255, 0.1)', padding: '0.75rem', borderRadius: '12px' }}>
-              <Box size={24} color="var(--secondary)" />
+              <Home size={24} color="var(--secondary)" />
             </div>
           </div>
           <div>

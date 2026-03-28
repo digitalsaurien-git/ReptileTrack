@@ -1,12 +1,13 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Turtle, Box, Plug, Settings } from "lucide-react";
+import { LayoutDashboard, Home, Plug, Settings } from "lucide-react";
+import { Snake } from "./icons/Snake";
 import "./Layout.css";
 
 export function Layout() {
   const navItems = [
     { to: "/", icon: <LayoutDashboard size={24} />, label: "Dashboard" },
-    { to: "/animals", icon: <Turtle size={24} />, label: "Animaux" },
-    { to: "/terrariums", icon: <Box size={24} />, label: "Terrariums" },
+    { to: "/animals", icon: <Snake size={24} />, label: "Animaux" },
+    { to: "/terrariums", icon: <Home size={24} />, label: "Terrariums" },
     { to: "/equipments", icon: <Plug size={24} />, label: "Matériel" }
   ];
 
@@ -14,7 +15,7 @@ export function Layout() {
     <div className="app-container">
       <nav className="sidebar glass-panel">
         <div className="logo">
-          <Turtle color="var(--primary)" size={32} />
+          <Snake color="var(--primary)" size={32} />
           <h2>ReptilTrack</h2>
         </div>
         
