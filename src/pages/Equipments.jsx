@@ -3,14 +3,30 @@ import { useAppContext } from '../store/AppContext';
 import { Plus, Trash2, Plug, Zap, Euro, Clock, Activity, Copy, Tag, Calendar } from 'lucide-react';
 import { calculateDailyCost, formatCurrency } from '../utils/costCalculator';
 
+const equipmentBrands = [
+  'Habistat',
+  'Terratlantis',
+  'Exo Terra',
+  'Arcadia',
+  'Zoo Med',
+  'Reptile Systems',
+  'Herptek',
+  'Trixie',
+  'Lucky Reptile',
+  'Pangea',
+  'Repashy'
+];
+
 export function Equipments() {
   const { settings, setSettings, equipments, setEquipments, terrariums } = useAppContext();
   
+  const generateId = () => (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
+
   const handleAdd = () => {
-    const newId = crypto.randomUUID();
+    const newId = generateId();
     setEquipments([{
       id: newId,
-      name: 'Nouvel équipement',
+      name: 'Equipement (Modèle)',
       brand: '',
       type: 'lampe_chauffante',
       watts: 50,
@@ -25,7 +41,7 @@ export function Equipments() {
   };
 
   const handleDuplicate = (eq) => {
-    const newId = crypto.randomUUID();
+    const newId = generateId();
     setEquipments([{
       ...eq,
       id: newId,
@@ -46,7 +62,7 @@ export function Equipments() {
 
     const newCopies = Array.from({ length: count }, (_, i) => ({
       ...eq,
-      id: crypto.randomUUID(),
+      id: generateId(),
       name: `${eq.name} (Lot ${i + 1})`,
       terrariumId: '',
       serialNumber: `${eq.serialNumber || 'SN'}-${i + 1}`
@@ -161,27 +177,36 @@ export function Equipments() {
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                           <input 
+                            list={`brand-list-${eq.id}`}
                             type="text" 
                             value={eq.brand || ''} 
-                            placeholder="Marque (Ex: Exo Terra)"
+                            placeholder="Marque (Ex: Habistat)"
                             onChange={e => updateEquipment(eq.id, 'brand', e.target.value)}
                             style={{ background: 'rgba(5, 150, 105, 0.05)', border: '1px solid var(--border-light)', fontSize: '0.75rem', color: 'var(--primary)', padding: '0.3rem 0.6rem', borderRadius: '4px', width: '40%', fontWeight: 700, textTransform: 'uppercase' }}
                           />
+                          <datalist id={`brand-list-${eq.id}`}>
+                            {equipmentBrands.map(b => <option key={b} value={b} />)}
+                          </datalist>
                           <input 
                             type="text" 
                             value={eq.name} 
-                            placeholder="Nom du modèle"
+                            placeholder="Ex: Sun Ray 70W"
                             onChange={e => updateEquipment(eq.id, 'name', e.target.value)}
                             style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-light)', fontWeight: 600, fontSize: '0.95rem', color: '#fff', padding: '0.3rem 0.6rem', borderRadius: '4px', flex: 1 }}
                           />
                         </div>
-                        <input 
-                          type="text" 
-                          value={eq.serialNumber || ''} 
-                          placeholder="ID / N° de Série"
-                          onChange={e => updateEquipment(eq.id, 'serialNumber', e.target.value)}
-                          style={{ background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-light)', fontSize: '0.75rem', color: 'var(--text-muted)', padding: '0.25rem 0.5rem', width: '120px' }}
-                        />
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                          <input 
+                            type="text" 
+                            value={eq.serialNumber || ''} 
+                            placeholder="Identifiant / N° de Série"
+                            onChange={e => updateEquipment(eq.id, 'serialNumber', e.target.value)}
+                            style={{ background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-light)', fontSize: '0.75rem', color: 'var(--text-muted)', padding: '0.25rem 0.5rem', width: '150px' }}
+                          />
+                          <span style={{ fontSize: '0.65rem', background: 'rgba(78, 222, 163, 0.1)', color: 'var(--primary)', padding: '0.1rem 0.5rem', borderRadius: '4px', fontWeight: 600, textTransform: 'uppercase' }}>
+                            {equipementTypes.find(t => t.value === eq.type)?.label || 'Équipement'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: '0.4rem' }}>

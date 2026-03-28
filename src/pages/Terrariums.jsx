@@ -152,21 +152,30 @@ export function Terrariums() {
                   
                   {tEquipments.length > 0 ? (
                     <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                      {tEquipments.map(eq => (
-                         <li key={eq.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '0.5rem 1rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                           <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-                             {eq.brand && <span style={{ color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', marginRight: '0.5rem' }}>{eq.brand}</span>}
-                             {eq.name} <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 400 }}>({eq.watts}W)</span>
-                           </span>
-                           <button 
-                             onClick={() => detachEquipment(eq.id)}
-                             title="Détacher de ce terrarium"
-                             style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '0.2rem' }}
-                           >
-                             <Trash2 size={16} />
-                           </button>
-                         </li>
-                      ))}
+                      {tEquipments.map(eq => {
+                         const typeLabel = eq.type === 'lampe_chauffante' ? 'Lampe' : 
+                                           eq.type === 'tapis_chauffant' ? 'Tapis' :
+                                           eq.type === 'lampe_uvb' ? 'UVB' :
+                                           eq.type === 'lampe_led' ? 'LED' :
+                                           eq.type === 'thermostat' ? 'Th.' :
+                                           eq.type === 'brumisateur' ? 'Pluie' : '';
+                         return (
+                           <li key={eq.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '0.5rem 1rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                             <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                               <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 500, marginRight: '0.5rem' }}>[{typeLabel}]</span>
+                               {eq.brand && <span style={{ color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', marginRight: '0.5rem' }}>{eq.brand}</span>}
+                               {eq.name} <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 400 }}>({eq.watts}W)</span>
+                             </span>
+                             <button 
+                               onClick={() => detachEquipment(eq.id)}
+                               title="Détacher de ce terrarium"
+                               style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '0.2rem' }}
+                             >
+                               <Trash2 size={16} />
+                             </button>
+                           </li>
+                         );
+                      })}
                     </ul>
                   ) : (
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem', fontStyle: 'italic' }}>Aucun matériel branché actuellement.</p>
@@ -183,9 +192,19 @@ export function Terrariums() {
                         defaultValue=""
                       >
                         <option value="" disabled>Associer un matériel existant...</option>
-                        {availableEquipments.map(eq => (
-                          <option key={eq.id} value={eq.id}>{eq.brand ? `${eq.brand.toUpperCase()} - ` : ''}{eq.name} ({eq.watts}W)</option>
-                        ))}
+                        {availableEquipments.map(eq => {
+                          const typeLabel = eq.type === 'lampe_chauffante' ? 'Lampe Chauffante' : 
+                                            eq.type === 'tapis_chauffant' ? 'Tapis Chauffant' :
+                                            eq.type === 'lampe_uvb' ? 'UVB' :
+                                            eq.type === 'lampe_led' ? 'LED' :
+                                            eq.type === 'thermostat' ? 'Thermostat' :
+                                            eq.type === 'brumisateur' ? 'Système Pluie' : 'Équipement';
+                          return (
+                            <option key={eq.id} value={eq.id}>
+                              {typeLabel} {eq.brand ? `- ${eq.brand.toUpperCase()}` : ''} ({eq.watts}W)
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
                   )}
