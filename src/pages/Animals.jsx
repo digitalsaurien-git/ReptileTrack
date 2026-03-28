@@ -75,47 +75,53 @@ export function Animals() {
               key={animal.id} 
               className="glass-card"
               onClick={() => navigate(`/animals/${animal.id}`)}
-              style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', minHeight: '200px', border: '1px solid var(--border-light)' }}
+              style={{ padding: 0, display: 'flex', flexDirection: 'column', minHeight: '320px', border: '1px solid var(--border-light)', overflow: 'hidden' }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+              <div style={{ height: '160px', width: '100%', overflow: 'hidden', position: 'relative' }}>
+                <img 
+                  src={animal.photoUrl || `https://images.unsplash.com/photo-1549480017-d76466a4b7e8?auto=format&fit=crop&w=400&q=80&sig=${encodeURIComponent(animal.commonName || animal.scientificName || animal.id)}`} 
+                  alt={animal.commonName} 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }} 
+                  className="animal-card-img"
+                />
+                <span className="badge" style={{ 
+                  position: 'absolute', top: '1rem', right: '1rem',
+                  background: animal.status === 'vivant' ? 'rgba(78, 222, 163, 0.9)' : 'rgba(255,255,255,0.8)', 
+                  color: animal.status === 'vivant' ? 'var(--text-on-primary)' : '#333',
+                  fontSize: '0.65rem'
+                }}>
+                  {animal.status || 'vivant'}
+                </span>
+              </div>
+              <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
                 <div>
-                   <span className="badge" style={{ 
-                      background: animal.status === 'vivant' ? 'rgba(78, 222, 163, 0.1)' : 'rgba(255,255,255,0.05)', 
-                      color: animal.status === 'vivant' ? 'var(--primary)' : 'var(--text-muted)',
-                      border: `1px solid ${animal.status === 'vivant' ? 'rgba(78, 222, 163, 0.2)' : 'rgba(255,255,255,0.1)'}`,
-                      marginBottom: '0.5rem',
-                      display: 'inline-block',
-                      fontSize: '0.65rem'
-                    }}>
-                      {animal.status || 'vivant'}
-                    </span>
-                  <h3 style={{ fontSize: '1.5rem', marginBottom: '0.1rem', color: '#ff6b00', fontWeight: 800, textTransform: 'uppercase' }}>
+                  <h3 style={{ fontSize: '1.3rem', marginBottom: '0.1rem', color: '#ff6b00', fontWeight: 800, textTransform: 'uppercase' }}>
                     {animal.nickname || animal.commonName || 'Specimen'}
                   </h3>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic', fontFamily: 'var(--font-heading)', opacity: 0.8 }}>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontStyle: 'italic', fontFamily: 'var(--font-heading)', opacity: 0.8 }}>
                     {animal.commonName} {animal.scientificName ? `(${animal.scientificName})` : ''}
                   </p>
                 </div>
-              </div>
               
-              <div style={{ marginTop: 'auto' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                  {animal.terrariumId ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--secondary)' }}>
-                      <ShieldCheck size={14} /> Habitat assigné
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--warning)' }}>
-                      <AlertCircle size={14} /> Sans habitat
-                    </div>
-                  )}
-                  <span style={{ fontSize: '1rem', color: 'var(--border-light)' }}>|</span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{animal.history?.length || 0} observations</span>
-                </div>
-                
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid var(--border-light)' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Consulter la fiche</span>
-                  <ChevronRight size={18} color="var(--primary)" />
+                <div style={{ marginTop: 'auto' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                    {animal.terrariumId ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--secondary)' }}>
+                        <ShieldCheck size={14} /> Habitat assigné
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--warning)' }}>
+                        <AlertCircle size={14} /> Sans habitat
+                      </div>
+                    )}
+                    <span style={{ fontSize: '1rem', color: 'var(--border-light)' }}>|</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{animal.history?.length || 0} obs.</span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid var(--border-light)' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Consulter la fiche</span>
+                    <ChevronRight size={18} color="var(--primary)" />
+                  </div>
                 </div>
               </div>
             </div>

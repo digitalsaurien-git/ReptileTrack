@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Core Colors - The Biophilic Curator Palette */
+  /* Dark Theme (Default) */
   --bg-dark: #0f141a;
   --bg-surface: #171c23;
   --bg-card: rgba(27, 32, 39, 0.7);
@@ -33,6 +33,48 @@
   --radius-md: 20px;
   --radius-lg: 32px;
   --radius-full: 9999px;
+
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.light-mode {
+  --bg-dark: #f0f4f8;
+  --bg-surface: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.7);
+  --bg-card-hover: rgba(255, 255, 255, 0.95);
+  
+  --primary: #059669;
+  --primary-container: #10b981;
+  --primary-glow: rgba(16, 185, 129, 0.1);
+  
+  --secondary: #2563eb;
+  --secondary-container: #dbeafe;
+  
+  --text-main: #1f2937;
+  --text-muted: #6b7280;
+  --text-on-primary: #ffffff;
+  
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  
+  --border-light: rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode h1, body.light-mode h2, body.light-mode h3, body.light-mode h4, body.light-mode h5, body.light-mode h6 {
+  color: #111827;
+}
+
+body.light-mode input, body.light-mode select, body.light-mode textarea {
+  background: rgba(255,255,255,0.8);
+  color: #1f2937;
+}
+
+body.light-mode .glass-card {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+body.light-mode .glass-card:hover {
+  box-shadow: 0 12px 24px rgba(0,0,0,0.1);
 }
 
 * {

@@ -250,10 +250,18 @@ export function AnimalDetail() {
                  />
                </div>
                <div style={{ border: '1px solid var(--border-light)', minHeight: '150px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.2)', overflow: 'hidden' }}>
-                  {animal.photoUrl ? (
-                    <img src={animal.photoUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain' }} />
+                  {animal.photoUrl || (animal.commonName || animal.scientificName) ? (
+                    <img 
+                      src={animal.photoUrl || `https://images.unsplash.com/photo-1549480017-d76466a4b7e8?auto=format&fit=crop&w=600&q=80&sig=${encodeURIComponent(animal.commonName || animal.scientificName || 'reptile')}`} 
+                      alt="Preview" 
+                      style={{ width: '100%', height: '250px', objectFit: 'cover' }} 
+                      onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1549480017-d76466a4b7e8'}
+                    />
                   ) : (
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Aperçu de la photo officielle</p>
+                    <div style={{ textAlign: 'center', padding: '2rem' }}>
+                      <Camera size={32} color="var(--text-muted)" style={{ marginBottom: '1rem' }} />
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Aperçu de la photo officielle</p>
+                    </div>
                   )}
                </div>
             </div>

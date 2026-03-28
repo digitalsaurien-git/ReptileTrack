@@ -1,9 +1,11 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Home, Plug, Settings } from "lucide-react";
+import { LayoutDashboard, Home, Plug, Settings, Sun, Moon } from "lucide-react";
 import { Snake } from "./icons/Snake";
+import { useAppContext } from "../store/AppContext";
 import "./Layout.css";
 
 export function Layout() {
+  const { theme, toggleTheme } = useAppContext();
   const navItems = [
     { to: "/", icon: <LayoutDashboard size={24} />, label: "Dashboard" },
     { to: "/animals", icon: <Snake size={24} />, label: "Animaux" },
@@ -13,6 +15,25 @@ export function Layout() {
 
   return (
     <div className="app-container">
+      <header className="top-header no-print">
+         <div className="theme-toggle">
+            <button 
+              className={`theme-btn ${theme === 'light' ? 'active' : ''}`}
+              onClick={() => toggleTheme('light')}
+              title="Mode Clair"
+            >
+              <Sun size={18} />
+            </button>
+            <button 
+              className={`theme-btn ${theme === 'dark' ? 'active' : ''}`}
+              onClick={() => toggleTheme('dark')}
+              title="Mode Sombre"
+            >
+              <Moon size={18} />
+            </button>
+         </div>
+      </header>
+
       <nav className="sidebar glass-panel">
         <div className="logo">
           <Snake color="var(--primary)" size={32} />
