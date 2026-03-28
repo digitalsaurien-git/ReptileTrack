@@ -236,15 +236,19 @@ export function Equipments() {
                   </div>
                   
                   <div style={{ marginBottom: '2rem' }}>
-                    <label>Assigné à</label>
+                    <label>Assigné à l'Habitat</label>
                     <select 
-                      value={eq.terrariumId} 
+                      value={eq.terrariumId || ''} 
                       onChange={e => updateEquipment(eq.id, 'terrariumId', e.target.value)}
                     >
                       <option value="">-- Non branché --</option>
-                      {terrariums.map(t => (
-                        <option key={t.id} value={t.id}>{t.name || `Habitat ${t.id.substring(0,4)}`}</option>
-                      ))}
+                      {terrariums && terrariums.length > 0 ? (
+                        terrariums.map(t => (
+                          <option key={t.id} value={t.id}>{t.name || `Habitat ${t.id.substring(0,4)}`} {t.brand ? `(${t.brand})` : ''}</option>
+                        ))
+                      ) : (
+                        <option disabled>Aucun habitat configuré</option>
+                      )}
                     </select>
                   </div>
 

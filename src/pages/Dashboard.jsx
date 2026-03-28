@@ -66,6 +66,24 @@ export function Dashboard() {
 
       </div>
 
+      <div className="glass-panel" style={{ marginBottom: '4rem', padding: '2.5rem' }}>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.5rem', marginBottom: '2rem' }}>
+          <Activity size={24} color="var(--primary)" /> État de la collection (Focus Espèces)
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1.5rem' }}>
+          {Object.entries(animals.reduce((acc, curr) => {
+            const species = curr.commonName || 'Inconnu';
+            acc[species] = (acc[species] || 0) + 1;
+            return acc;
+          }, {})).sort((a,b) => b[1] - a[1]).map(([species, count]) => (
+            <div key={species} style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-light)', textAlign: 'center' }}>
+               <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>{species}</div>
+               <div style={{ fontSize: '2.5rem', fontWeight: 800, color: species.toLowerCase().includes('python') ? 'var(--secondary)' : (species.toLowerCase().includes('gecko') ? 'var(--primary)' : '#fff') }}>{count}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="glass-panel" style={{ background: 'transparent', padding: 0, border: 'none', boxShadow: 'none' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.5rem' }}>

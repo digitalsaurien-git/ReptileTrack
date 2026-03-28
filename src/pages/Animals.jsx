@@ -63,28 +63,31 @@ export function Animals() {
           <p>Commencez par ajouter votre premier pensionnaire à la collection.</p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
           {filteredAnimals.map(animal => (
             <div 
               key={animal.id} 
               className="glass-card"
               onClick={() => navigate(`/animals/${animal.id}`)}
-              style={{ padding: '2rem', display: 'flex', flexDirection: 'column', minHeight: '220px' }}
+              style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', minHeight: '200px', border: '1px solid var(--border-light)' }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
                 <div>
                    <span className="badge" style={{ 
                       background: animal.status === 'vivant' ? 'rgba(78, 222, 163, 0.1)' : 'rgba(255,255,255,0.05)', 
                       color: animal.status === 'vivant' ? 'var(--primary)' : 'var(--text-muted)',
                       border: `1px solid ${animal.status === 'vivant' ? 'rgba(78, 222, 163, 0.2)' : 'rgba(255,255,255,0.1)'}`,
-                      marginBottom: '0.75rem',
-                      display: 'inline-block'
+                      marginBottom: '0.5rem',
+                      display: 'inline-block',
+                      fontSize: '0.65rem'
                     }}>
                       {animal.status || 'vivant'}
                     </span>
-                  <h3 style={{ fontSize: '1.5rem', marginBottom: '0.25rem', color: '#fff' }}>{animal.commonName || 'Specimen'}</h3>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic', fontFamily: 'var(--font-heading)' }}>
-                    {animal.scientificName || 'Espèce non classifiée'}
+                  <h3 style={{ fontSize: '1.5rem', marginBottom: '0.1rem', color: '#ff6b00', fontWeight: 800, textTransform: 'uppercase' }}>
+                    {animal.nickname || animal.commonName || 'Specimen'}
+                  </h3>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic', fontFamily: 'var(--font-heading)', opacity: 0.8 }}>
+                    {animal.commonName} {animal.scientificName ? `(${animal.scientificName})` : ''}
                   </p>
                 </div>
               </div>

@@ -86,16 +86,31 @@ export function Terrariums() {
                 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
                   <div>
-                    <label>Marque / Modèle</label>
+                    <label>Marque Habitat</label>
                     <div style={{ position: 'relative' }}>
                       <Info size={16} style={{ position: 'absolute', left: '1rem', top: '1.1rem', color: 'var(--secondary)' }} />
-                      <input 
-                        type="text" 
-                        value={t.brand || ''} 
-                        onChange={(e) => updateTerrarium(t.id, 'brand', e.target.value)}
-                        placeholder="Ex: ExoTerra"
+                      <select 
+                        value={['Abistat', 'Herptek', 'Terra-plantis', 'Komodo'].includes(t.brand) ? t.brand : (t.brand ? 'custom' : '')} 
+                        onChange={(e) => {
+                          if (e.target.value === 'custom') {
+                            const custom = window.prompt("Saisir la marque du terrarium :");
+                            updateTerrarium(t.id, 'brand', custom || '');
+                          } else {
+                            updateTerrarium(t.id, 'brand', e.target.value);
+                          }
+                        }}
                         style={{ paddingLeft: '2.75rem' }}
-                      />
+                      >
+                        <option value="">-- Sélectionner --</option>
+                        <option value="Abistat">Abistat</option>
+                        <option value="Herptek">Herptek</option>
+                        <option value="Terra-plantis">Terra-plantis</option>
+                        <option value="Komodo">Komodo</option>
+                        <option value="custom">Autre (Saisir...)</option>
+                      </select>
+                      {t.brand && !['Abistat', 'Herptek', 'Terra-plantis', 'Komodo'].includes(t.brand) && (
+                        <p style={{ position: 'absolute', bottom: '-1.5rem', left: 0, fontSize: '0.7rem', color: 'var(--primary)' }}>Saisie libre : {t.brand}</p>
+                      )}
                     </div>
                   </div>
                   <div>

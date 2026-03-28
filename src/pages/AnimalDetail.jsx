@@ -199,13 +199,13 @@ export function AnimalDetail() {
                 </div>
              </div>
 
-             <div style={{ marginBottom: '1.5rem', background: 'rgba(78, 222, 163, 0.05)', padding: '1.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
-               <label style={{ color: 'var(--primary)' }}>Surnom / Nom d'usage</label>
+             <div style={{ marginBottom: '1.5rem', background: 'rgba(255, 107, 0, 0.05)', padding: '1.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255, 107, 0, 0.2)' }}>
+               <label style={{ color: '#ff6b00', fontWeight: 800 }}>SURNOM DE L'ANIMAL (Visual ID)</label>
                <input 
                  value={animal.nickname || ''} 
                  onChange={e => updateField('nickname', e.target.value)} 
-                 placeholder="Ex: Rex, Alpha-1..."
-                 style={{ fontSize: '1.1rem', fontWeight: 600 }}
+                 placeholder="Ex: REX, KAA..."
+                 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ff6b00', textTransform: 'uppercase' }}
                />
              </div>
              
@@ -269,25 +269,43 @@ export function AnimalDetail() {
            
            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
              <div>
-                <label>Statut CITES</label>
-                <select value={animal.citesStatus || ''} onChange={e => updateField('citesStatus', e.target.value)}>
-                  <option value="">Aucun</option>
-                  <option value="annexe_1">Annexe I</option>
-                  <option value="annexe_2">Annexe II</option>
-                  <option value="annexe_3">Annexe III</option>
-                </select>
-             </div>
-             <div>
-                 <label>Code Source Officiel</label>
-                 <select value={animal.sourceCode || 'C'} onChange={e => updateField('sourceCode', e.target.value)}>
-                   <option value="W">W - Prélevé dans la nature (Wild)</option>
-                   <option value="C">C - Né en captivité - Annexe A (Captive)</option>
-                   <option value="F">F - Né en captivité - Annexe B/C/D (Born in cap.)</option>
-                   <option value="R">R - Issu d'un établissement d'élevage (Ranched)</option>
-                   <option value="U">U - Source inconnue (Unknown)</option>
+                 <label>Statut CITES / UE et Régime</label>
+                 <select 
+                   value={animal.citesStatus || ''} 
+                   onChange={e => {
+                     const val = e.target.value;
+                     let eu = '';
+                     let regime = '';
+                     if (val === 'annexe_1') { eu = 'annexe_A'; regime = 'cdc'; }
+                     else if (val === 'annexe_2') { eu = 'annexe_B'; regime = 'declaration'; }
+                     else if (val === 'annexe_3') { eu = 'annexe_C'; regime = 'libre'; }
+                     
+                     setAnimal({
+                       ...animal,
+                       citesStatus: val,
+                       euStatus: eu,
+                       detentionRegime: regime
+                     });
+                   }}
+                 >
+                   <option value="">-- Sélectionner l'Annexe CITES --</option>
+                   <option value="annexe_1">CITES Annexe I (Espèces menacées)</option>
+                   <option value="annexe_2">CITES Annexe II (Commerce contrôlé)</option>
+                   <option value="annexe_3">CITES Annexe III (Protection locale)</option>
+                   <option value="nc">Non CITES (NC)</option>
                  </select>
               </div>
               <div>
+                  <label>Code Source Officiel</label>
+                  <select value={animal.sourceCode || 'C'} onChange={e => updateField('sourceCode', e.target.value)}>
+                    <option value="W">W - Prélevé dans la nature (Wild)</option>
+                    <option value="C">C - Né en captivité - Annexe A (Captive)</option>
+                    <option value="F">F - Né en captivité - Annexe B/C/D (Born in cap.)</option>
+                    <option value="R">R - Issu d'un établissement d'élevage (Ranched)</option>
+                    <option value="U">U - Source inconnue (Unknown)</option>
+                  </select>
+               </div>
+               <div>
                  <label>Numéro de marquage / CITES</label>
                  <input value={animal.citesNumber || ''} onChange={e => updateField('citesNumber', e.target.value)} placeholder="Ex: FR-23-01..." />
               </div>
