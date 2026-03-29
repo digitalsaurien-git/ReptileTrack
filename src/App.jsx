@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppProvider } from "./store/AppContext";
 import { Layout } from "./components/Layout";
 
@@ -13,7 +13,7 @@ import { Finances } from "./pages/Finances";
 function App() {
   return (
     <AppProvider>
-      <HashRouter>
+      <BrowserRouter basename="/ReptileTrack/">
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
@@ -24,7 +24,7 @@ function App() {
             <Route path="finances" element={<Finances />} />
           </Route>
         </Routes>
-      </HashRouter>
+      </BrowserRouter>
     </AppProvider>
   );
 }
