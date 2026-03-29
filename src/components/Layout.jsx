@@ -40,7 +40,7 @@ export function Layout() {
           <Snake color="var(--primary)" size={32} />
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem' }}>
             <h2 style={{ margin: 0 }}>ReptileTrack</h2>
-            <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 800, opacity: 0.9 }}>v2.7</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 800, opacity: 0.9 }}>v2.8</span>
           </div>
         </div>
         
