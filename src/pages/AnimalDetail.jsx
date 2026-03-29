@@ -4,7 +4,7 @@ import { useAppContext } from '../store/AppContext';
 import { 
   ChevronLeft, Save, Plus, Trash2, Camera, MapPin, 
   Bone, Activity, FileText, Info, Calendar, ClipboardList,
-  Scale, Shield, Truck, Printer, Euro
+  Scale, Shield, Truck, Printer, Euro, Zap, Send
 } from 'lucide-react';
 import { speciesList } from '../data/species';
 import { getPlaceholderImage } from '../utils/imageUtils';
@@ -18,6 +18,15 @@ export function AnimalDetail() {
   const [activeTab, setActiveTab] = useState('infos');
   const [newEvent, setNewEvent] = useState({ type: 'repas', date: new Date().toISOString().split('T')[0], notes: '' });
   const [newDoc, setNewDoc] = useState({ name: '', type: 'facture', date: new Date().toISOString().split('T')[0], ref: '' });
+
+  // État de l'automatisation Make
+  const [webhookUrl, setWebhookUrl] = useState(localStorage.getItem('reptiltrack_webhook_url') || '');
+  const [isSending, setIsSending] = useState(false);
+
+  const saveWebhookUrl = (url) => {
+    setWebhookUrl(url);
+    localStorage.setItem('reptiltrack_webhook_url', url);
+  };
 
   useEffect(() => {
     const found = animals.find(a => a.id === id);
@@ -78,6 +87,41 @@ export function AnimalDetail() {
     setAnimal(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleSendToWebhook = async () => {
+    if (!webhookUrl) {
+      alert("Veuillez renseigner une URL de webhook.");
+      return;
+    }
+    
+    setIsSending(true);
+    try {
+      const payload = {
+        animal: animal,
+        timestamp: new Date().toISOString(),
+        source: 'ReptilTrack V2'
+      };
+      
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (response.ok) {
+         alert("✅ Données de l'animal transmises avec succès à Make !");
+      } else {
+         alert("⚠️ Erreur : Le webhook a retourné un statut " + response.status);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("❌ Impossible de joindre l'URL. Vérifiez que l'URL est correcte et accessible (CORS).");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   return (
     <div className="animate-fade-in print-container">
       <header className="no-print" style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
@@ -107,7 +151,8 @@ export function AnimalDetail() {
           { id: 'legal', label: 'Réglementaire', icon: <Shield size={18} /> },
           { id: 'entry', label: 'Entrée', icon: <Truck size={18} /> },
           { id: 'history', label: 'Journal', icon: <Activity size={18} /> },
-          { id: 'docs', label: 'Documents', icon: <FileText size={18} /> }
+          { id: 'docs', label: 'Documents', icon: <FileText size={18} /> },
+          { id: 'automation', label: 'Automatisation', icon: <Zap size={18} /> }
         ].map(tab => (
           <button 
             key={tab.id}
@@ -634,6 +679,49 @@ export function AnimalDetail() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {activeTab === 'automation' && (
+        <div className="no-print animate-fade-in glass-panel" style={{ padding: '2.5rem', maxWidth: '800px', margin: '0 auto' }}>
+           <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.25rem' }}>
+             <Zap size={22} color="var(--primary)" /> Configuration Webhook (Make / Zapier)
+           </h3>
+           <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '0.9rem', lineHeight: '1.5' }}>
+             Configurez une URL de Webhook pour transmettre instantanément l'intégralité de la fiche de cet animal (informations, réglementations, journal) au format JSON vers un scénario d'automatisation externe.
+           </p>
+           
+           <div style={{ marginBottom: '2rem' }}>
+              <label>URL du Webhook cible</label>
+              <input 
+                type="url"
+                placeholder="Ex: https://hook.eu1.make.com/xxxxxxxxx"
+                value={webhookUrl}
+                onChange={e => saveWebhookUrl(e.target.value)}
+                style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
+              />
+           </div>
+
+           <div style={{ padding: '1.5rem', background: 'rgba(78, 222, 163, 0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(78, 222, 163, 0.2)' }}>
+              <h4 style={{ marginBottom: '1rem', color: 'var(--text-main)', fontSize: '1rem' }}>Action Manuelle</h4>
+              <button 
+                onClick={handleSendToWebhook} 
+                className="btn btn-primary" 
+                style={{ width: '100%', padding: '1rem', fontSize: '1.05rem', justifyContent: 'center' }}
+                disabled={isSending || !webhookUrl}
+              >
+                {isSending ? (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ width: '18px', height: '18px', border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                    Transmission en cours...
+                  </span>
+                ) : (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Send size={18} /> Transmettre la fiche ({animal.id.substring(0, 6)}) en JSON
+                  </span>
+                )}
+              </button>
+           </div>
         </div>
       )}
 
