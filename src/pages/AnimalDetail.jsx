@@ -19,14 +19,7 @@ export function AnimalDetail() {
   const [newEvent, setNewEvent] = useState({ type: 'repas', date: new Date().toISOString().split('T')[0], notes: '' });
   const [newDoc, setNewDoc] = useState({ name: '', type: 'facture', date: new Date().toISOString().split('T')[0], ref: '' });
 
-  // État de l'automatisation Make
-  const [webhookUrl, setWebhookUrl] = useState(localStorage.getItem('reptiltrack_webhook_url') || '');
   const [isSending, setIsSending] = useState(false);
-
-  const saveWebhookUrl = (url) => {
-    setWebhookUrl(url);
-    localStorage.setItem('reptiltrack_webhook_url', url);
-  };
 
   useEffect(() => {
     const found = animals.find(a => a.id === id);
@@ -88,8 +81,9 @@ export function AnimalDetail() {
   };
 
   const handleSendToWebhook = async () => {
+    const webhookUrl = localStorage.getItem('reptiltrack_webhook_url');
     if (!webhookUrl) {
-      alert("Veuillez renseigner une URL de webhook.");
+      alert("⚠️ Aucune URL de webhook n'est configurée.\nVeuillez l'ajouter dans les Paramètres (roue crantée) du menu principal.");
       return;
     }
     
@@ -133,6 +127,15 @@ export function AnimalDetail() {
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Fiche détaillée de l'animal</p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button 
+            className="btn btn-secondary" 
+            onClick={handleSendToWebhook} 
+            disabled={isSending}
+            style={{ padding: '0.6rem 1.25rem', color: '#ffb900', borderColor: 'rgba(255,185,0,0.3)' }} 
+            title="Transmettre à Make (Webhook)"
+          >
+            <Send size={18} /> <span className="hide-mobile">{isSending ? 'Envoi...' : 'Webhook'}</span>
+          </button>
           <button className="btn btn-secondary" onClick={() => window.print()} style={{ padding: '0.6rem 1.25rem', color: 'var(--secondary)', borderColor: 'var(--secondary-container)' }} aria-label="Imprimer la fiche PDF">
             <Printer size={18} /> <span className="hide-mobile">Fiche PDF</span>
           </button>
@@ -151,8 +154,7 @@ export function AnimalDetail() {
           { id: 'legal', label: 'Réglementaire', icon: <Shield size={18} /> },
           { id: 'entry', label: 'Entrée', icon: <Truck size={18} /> },
           { id: 'history', label: 'Journal', icon: <Activity size={18} /> },
-          { id: 'docs', label: 'Documents', icon: <FileText size={18} /> },
-          { id: 'automation', label: 'Automatisation', icon: <Zap size={18} /> }
+          { id: 'docs', label: 'Documents', icon: <FileText size={18} /> }
         ].map(tab => (
           <button 
             key={tab.id}
