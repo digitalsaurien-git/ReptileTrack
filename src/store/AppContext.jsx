@@ -37,14 +37,14 @@ export function AppProvider({ children }) {
   const loginWithGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin }
+      options: { redirectTo: 'https://reptil-track.vercel.app' }
     });
   };
 
   const loginWithEmail = async (email) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.origin }
+      options: { emailRedirectTo: 'https://reptil-track.vercel.app' }
     });
     return { error };
   };
