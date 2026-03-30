@@ -103,18 +103,42 @@ export function AppProvider({ children }) {
     }
   }, [theme]);
 
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error("Error signing out:", error);
+    setUser(null);
+    setIsGuest(true);
+    localStorage.removeItem('reptiltrack_is_guest');
+    navigate('/login');
+  };
+
+  const value = {
+    user,
+    setUser,
+    isGuest,
+    setIsGuest,
+    animals,
+    setAnimals,
+    terrariums,
+    setTerrariums,
+    equipments,
+    setEquipments,
+    foods,
+    setFoods,
+    domotics,
+    setDomotics,
+    settings,
+    setSettings,
+    theme,
+    toggleTheme,
+    signOut,
+    loginWithGoogle,
+    loginWithEmail,
+    logout
+  };
+
   return (
-    <AppContext.Provider value={{
-      user, loading, isGuest, setIsGuest,
-      loginWithGoogle, loginWithEmail, logout,
-      animals, setAnimals,
-      terrariums, setTerrariums,
-      equipments, setEquipments,
-      foods, setFoods,
-      domotics, setDomotics,
-      settings, setSettings,
-      theme, toggleTheme
-    }}>
+    <AppContext.Provider value={value}>
       {!loading && children}
     </AppContext.Provider>
   );

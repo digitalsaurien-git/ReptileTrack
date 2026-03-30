@@ -6,7 +6,7 @@ import { useAppContext } from "../store/AppContext";
 import "./Layout.css";
 
 export function Layout() {
-  const { theme, toggleTheme, logout, user } = useAppContext();
+  const { theme, toggleTheme, signOut, user, setIsGuest } = useAppContext();
   const [showSettings, setShowSettings] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState(localStorage.getItem('reptiltrack_webhook_url') || '');
 
@@ -18,8 +18,7 @@ export function Layout() {
   const fileInputRef = useRef(null);
 
   const handleLogout = () => {
-    logout();
-    setIsGuest(false);
+    signOut();
   };
 
   const handleExportData = () => {
