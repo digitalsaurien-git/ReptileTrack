@@ -11,6 +11,7 @@ export function Domotics() {
     provider: "switchbot", 
     deviceId: "",
     ipAddress: "",
+    room: "Salon",
     terrariumIds: [] 
   });
 
@@ -37,7 +38,7 @@ export function Domotics() {
     };
     setDomotics([...domotics, device]);
     setShowAddModal(false);
-    setNewDevice({ name: "", type: "plug", provider: "switchbot", deviceId: "", ipAddress: "", terrariumIds: [] });
+    setNewDevice({ name: "", type: "plug", provider: "switchbot", deviceId: "", ipAddress: "", room: "Salon", terrariumIds: [] });
   };
 
   const togglePlug = (id) => {
@@ -116,6 +117,8 @@ export function Domotics() {
                     <div>
                       <h4 style={{ margin: 0 }}>{device.name}</h4>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.3rem' }}>
+                        <span className="badge" style={{ padding: '0.1rem 0.4rem', fontSize: '0.65rem' }}>{device.room}</span>
+                        <span>•</span>
                         <span>{providers.find(p => p.id === device.provider)?.label}</span>
                         {selectedTerras.length > 0 && (
                           <>
@@ -232,14 +235,27 @@ export function Domotics() {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Constructeur</label>
+                  <label>Pièce</label>
                   <select 
-                    value={newDevice.provider}
-                    onChange={e => setNewDevice({...newDevice, provider: e.target.value})}
+                    value={newDevice.room}
+                    onChange={e => setNewDevice({...newDevice, room: e.target.value})}
                   >
-                    {providers.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                    <option value="Salon">Salon</option>
+                    <option value="Bureau">Bureau</option>
+                    <option value="Élevage">Élevage</option>
+                    <option value="Autre">Autre</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                <label>Constructeur / Marque</label>
+                <select 
+                  value={newDevice.provider}
+                  onChange={e => setNewDevice({...newDevice, provider: e.target.value})}
+                >
+                  {providers.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                </select>
               </div>
 
               <div className="form-group" style={{ marginBottom: '1.5rem' }}>
