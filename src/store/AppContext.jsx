@@ -39,6 +39,14 @@ export function AppProvider({ children }) {
     });
   };
 
+  const loginWithEmail = async (email) => {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.origin }
+    });
+    return { error };
+  };
+
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -96,7 +104,7 @@ export function AppProvider({ children }) {
   return (
     <AppContext.Provider value={{
       user, loading,
-      loginWithGoogle, logout,
+      loginWithGoogle, loginWithEmail, logout,
       animals, setAnimals,
       terrariums, setTerrariums,
       equipments, setEquipments,
