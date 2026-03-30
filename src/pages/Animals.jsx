@@ -22,6 +22,7 @@ export function Animals() {
   
   const filteredAnimals = animals.filter(a => {
     const matchesSearch = (
+      a.nickname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       a.commonName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       a.scientificName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       a.chipNumber?.includes(searchTerm)
@@ -145,7 +146,7 @@ export function Animals() {
                 </button>
               </div>
             )}
-            <div style={{ display: 'flex', gap: '0.25rem', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '0.25rem', background: 'rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', gap: '0.25rem', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '0.25rem', background: 'var(--bg-surface)' }}>
               <button 
                 onClick={() => handleViewModeChange('gallery')} 
                 className={`btn ${viewMode === 'gallery' ? 'btn-primary' : ''}`} 

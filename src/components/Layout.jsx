@@ -39,7 +39,7 @@ export function Layout() {
             {showSettings && (
               <div className="glass-panel" style={{ 
                 position: 'absolute', 
-                top: '120%', 
+                bottom: '120%', 
                 right: 0, 
                 width: '320px', 
                 padding: '1.5rem',
@@ -58,7 +58,7 @@ export function Layout() {
                     value={webhookUrl}
                     onChange={(e) => setWebhookUrl(e.target.value)}
                     placeholder="https://hook.make.com/..."
-                    style={{ flex: 1, padding: '0.5rem', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid var(--border-light)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+                    style={{ flex: 1, padding: '0.5rem', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid var(--border-light)', background: 'var(--bg-dark)', color: 'var(--text-main)' }}
                   />
                   <button 
                     onClick={saveWebhook}

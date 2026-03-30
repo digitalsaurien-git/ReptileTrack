@@ -1,11 +1,13 @@
 .top-header {
   position: fixed;
-  top: 1.5rem;
+  bottom: 2rem;
   right: 2rem;
+  top: auto;
   z-index: 1000;
   display: flex;
-  align-items: center;
-  gap: 1.5rem;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 1rem;
 }
 
 .theme-toggle {
@@ -140,6 +142,11 @@ body.light-mode .logo h2 {
 @media (max-width: 768px) {
   .sidebar {
     display: none;
+  }
+  
+  .top-header {
+    bottom: 5.5rem;
+    right: 1.25rem;
   }
 
   .bottom-nav {

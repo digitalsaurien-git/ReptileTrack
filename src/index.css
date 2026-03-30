@@ -38,49 +38,49 @@
 }
 
 body.light-mode {
-  --bg-dark: #fbfcfd;
+  --bg-dark: #f2f3ef;
   --bg-surface: #ffffff;
   --bg-card: #ffffff;
-  --bg-card-hover: #ffffff;
+  --bg-card-hover: #fcfdfc;
   
-  --primary: #036b4a; /* Teinte forêt plus profonde et sobre */
-  --primary-container: #10b981;
-  --primary-glow: rgba(5, 150, 105, 0.08);
+  --primary: #3a5a40;
+  --primary-container: #588157;
+  --primary-glow: rgba(58, 90, 64, 0.1);
   
-  --secondary: #1e40af; /* Bleu nuit pour contrastes académiques */
-  --secondary-container: #eff6ff;
+  --secondary: #bc6c25;
+  --secondary-container: #dda15e;
   
-  --text-main: #111827; /* Noir charbon */
-  --text-muted: #4b5563; /* Gris moyen pour labels */
+  --text-main: #2b3531;
+  --text-muted: #64746b;
   --text-on-primary: #ffffff;
   
-  --danger: #991b1b;
-  --warning: #92400e;
+  --danger: #b03a2e;
+  --warning: #d35400;
   
-  --border-light: rgba(0, 0, 0, 0.05); /* Bordure ultra-fine */
+  --border-light: rgba(58, 90, 64, 0.15);
 }
 
 body.light-mode h1, body.light-mode h2, body.light-mode h3, body.light-mode h4, body.light-mode h5, body.light-mode h6 {
-  color: #111827 !important;
+  color: #2b3531 !important;
   letter-spacing: -0.015em;
 }
 
-body.light-mode body {
+body.light-mode {
   background-image: 
-    radial-gradient(circle at 0% 0%, rgba(5, 150, 105, 0.03), transparent 40%),
-    radial-gradient(circle at 100% 100%, rgba(37, 99, 235, 0.03), transparent 40%);
+    radial-gradient(circle at 0% 0%, rgba(88, 129, 87, 0.08), transparent 40%),
+    radial-gradient(circle at 100% 100%, rgba(188, 108, 37, 0.08), transparent 40%);
 }
 
 body.light-mode input, body.light-mode select, body.light-mode textarea {
-  background: #f9fafb;
-  border-color: #e5e7eb;
-  color: #111827;
+  background: #fbfcf9;
+  border-color: #daddd8;
+  color: #2b3531;
 }
 
 body.light-mode input:focus, body.light-mode select:focus, body.light-mode textarea:focus {
   background: #ffffff;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+  box-shadow: 0 0 0 3px rgba(88, 129, 87, 0.15);
 }
 
 body.light-mode .glass-panel {
@@ -109,34 +109,34 @@ body.light-mode .badge {
 }
 
 body.light-mode .badge[style*="rgba(78, 222, 163, 0.1)"] {
-  background: #ecfdf5 !important;
-  color: #065f46 !important;
-  border-color: #a7f3d0 !important;
+  background: #eef3ef !important;
+  color: #3a5a40 !important;
+  border-color: #a3b1a6 !important;
 }
 
 body.light-mode .btn-secondary {
-  background: #f3f4f6;
-  color: #111827;
-  border-color: #e5e7eb;
+  background: #f6f7f5;
+  color: #2b3531;
+  border-color: #daddd8;
 }
 
 body.light-mode .btn-secondary:hover {
-  background: #e5e7eb;
+  background: #eaede8;
 }
 
 body.light-mode .sidebar {
   background: #ffffff;
-  border-right: 1px solid #f3f4f6;
+  border-right: 1px solid var(--border-light);
 }
 
 body.light-mode .nav-item:hover {
-  background: #f9fafb;
+  background: rgba(88, 129, 87, 0.1);
   color: var(--primary);
 }
 
 body.light-mode .nav-item.active {
-   background: #f0fdf4;
-   color: #166534;
+   background: rgba(88, 129, 87, 0.15);
+   color: #2c4431;
 }
 
 * {
