@@ -1,12 +1,12 @@
 import { useState, useRef } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Home, Plug, Settings, Sun, Moon, Euro, X, Check, Drumstick, Download, Upload } from "lucide-react";
+import { LayoutDashboard, Home, Plug, Settings, Sun, Moon, Euro, X, Check, Drumstick, Download, Upload, LogOut } from "lucide-react";
 import { Snake } from "./icons/Snake";
 import { useAppContext } from "../store/AppContext";
 import "./Layout.css";
 
 export function Layout() {
-  const { theme, toggleTheme } = useAppContext();
+  const { theme, toggleTheme, logout, user } = useAppContext();
   const [showSettings, setShowSettings] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState(localStorage.getItem('reptiltrack_webhook_url') || '');
 
@@ -112,7 +112,6 @@ export function Layout() {
                     <Check size={16} />
                   </button>
                 </div>
-                </div>
 
                 <hr style={{ border: 'none', borderTop: '1px solid var(--border-light)', margin: '1.5rem 0' }} />
 
@@ -134,6 +133,19 @@ export function Layout() {
                     accept=".json" 
                     onChange={handleImportData}
                   />
+                </div>
+
+                <hr style={{ border: 'none', borderTop: '1px solid var(--border-light)', margin: '1.5rem 0' }} />
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Connecté en tant que : <br/>
+                    <strong style={{ color: 'var(--text-main)' }}>{user?.email}</strong>
+                  </div>
+                  <button onClick={logout} className="btn" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', color: 'var(--text-main)', border: '1px solid var(--border-light)', padding: '0.75rem', gap: '0.75rem' }}>
+                    <LogOut size={16} />
+                    Se déconnecter
+                  </button>
                 </div>
 
               </div>
