@@ -38,10 +38,10 @@
 }
 
 body.light-mode {
-  --bg-dark: #f5f3ee;
-  --bg-surface: #fdfbf7;
-  --bg-card: #f9f7f0;
-  --bg-card-hover: #f2f0e9;
+  --bg-dark: #f0ede4;
+  --bg-surface: #f9f6e8;
+  --bg-card: #f2eee0;
+  --bg-card-hover: #e8e4d5;
   
   --primary: #3a5a40;
   --primary-container: #588157;
