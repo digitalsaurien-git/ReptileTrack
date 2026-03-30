@@ -10,12 +10,14 @@ export function Domotics() {
     type: "plug", 
     provider: "switchbot", 
     deviceId: "",
+    ipAddress: "",
     terrariumIds: [] 
   });
 
   const deviceTypes = [
     { id: 'plug', label: 'Prise Connectée', icon: <Power size={20} /> },
     { id: 'sensor', label: 'Capteur Temp/Hum', icon: <Thermometer size={20} /> },
+    { id: 'camera', label: 'Caméra de surveillance', icon: <Camera size={20} /> },
   ];
 
   const providers = [
@@ -35,7 +37,7 @@ export function Domotics() {
     };
     setDomotics([...domotics, device]);
     setShowAddModal(false);
-    setNewDevice({ name: "", type: "plug", provider: "switchbot", deviceId: "", terrariumIds: [] });
+    setNewDevice({ name: "", type: "plug", provider: "switchbot", deviceId: "", ipAddress: "", terrariumIds: [] });
   };
 
   const togglePlug = (id) => {
@@ -107,7 +109,9 @@ export function Domotics() {
                       justifyContent: 'center',
                       color: isOn ? 'var(--primary)' : 'inherit'
                     }}>
-                      {device.type === 'plug' ? <Power size={20} /> : <Thermometer size={20} />}
+                      {device.type === 'plug' && <Power size={20} />}
+                      {device.type === 'sensor' && <Thermometer size={20} />}
+                      {device.type === 'camera' && <Camera size={20} />}
                     </div>
                     <div>
                       <h4 style={{ margin: 0 }}>{device.name}</h4>
@@ -143,10 +147,12 @@ export function Domotics() {
                   <div>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Statut</div>
                     <div style={{ fontWeight: '600', color: isOn ? 'var(--primary)' : 'var(--text-main)' }}>
-                      {isPlug ? (isOn ? 'ALLUMÉ' : 'ÉTEINT') : device.value}
+                      {device.type === 'plug' ? (isOn ? 'ALLUMÉ' : 'ÉTEINT') : 
+                       device.type === 'sensor' ? device.value : 
+                       device.ipAddress || 'Flux actif'}
                     </div>
                   </div>
-                  {isPlug && (
+                  {isPlug ? (
                     <button 
                       onClick={() => togglePlug(device.id)}
                       style={{
@@ -172,7 +178,11 @@ export function Domotics() {
                         boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
                       }} />
                     </button>
-                  )}
+                  ) : device.type === 'camera' ? (
+                    <button className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem' }} onClick={() => window.open(`rtsp://${device.ipAddress}`, '_blank')}>
+                      Ouvrir le flux
+                    </button>
+                  ) : null}
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
@@ -233,13 +243,19 @@ export function Domotics() {
               </div>
 
               <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                <label>ID de l'appareil (Device ID Cloud)</label>
+                <label>{newDevice.type === 'camera' ? 'Adresse IP Locale' : 'ID de l\'appareil (Device ID Cloud)'}</label>
                 <input 
                   type="text" 
                   required 
-                  value={newDevice.deviceId}
-                  onChange={e => setNewDevice({...newDevice, deviceId: e.target.value})}
-                  placeholder="ex: ABC-123-XYZ" 
+                  value={newDevice.type === 'camera' ? newDevice.ipAddress : newDevice.deviceId}
+                  onChange={e => {
+                    if (newDevice.type === 'camera') {
+                      setNewDevice({...newDevice, ipAddress: e.target.value});
+                    } else {
+                      setNewDevice({...newDevice, deviceId: e.target.value});
+                    }
+                  }}
+                  placeholder={newDevice.type === 'camera' ? "ex: 192.168.1.50" : "ex: ABC-123-XYZ"} 
                 />
               </div>
 
