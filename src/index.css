@@ -38,10 +38,10 @@
 }
 
 body.light-mode {
-  --bg-dark: #f2f3ef;
-  --bg-surface: #ffffff;
-  --bg-card: #ffffff;
-  --bg-card-hover: #fcfdfc;
+  --bg-dark: #f5f3ee;
+  --bg-surface: #fdfbf7;
+  --bg-card: #f9f7f0;
+  --bg-card-hover: #f2f0e9;
   
   --primary: #3a5a40;
   --primary-container: #588157;
@@ -125,7 +125,7 @@ body.light-mode .btn-secondary:hover {
 }
 
 body.light-mode .sidebar {
-  background: #ffffff;
+  background: #fdfbf7;
   border-right: 1px solid var(--border-light);
 }
 

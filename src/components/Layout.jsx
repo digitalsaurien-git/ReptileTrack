@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Home, Plug, Settings, Sun, Moon, Euro, X, Check, Drumstick } from "lucide-react";
+import { LayoutDashboard, Home, Plug, Settings, Sun, Moon, Euro, X, Check, Drumstick, Download, Upload } from "lucide-react";
 import { Snake } from "./icons/Snake";
 import { useAppContext } from "../store/AppContext";
 import "./Layout.css";
@@ -13,6 +13,51 @@ export function Layout() {
   const saveWebhook = () => {
     localStorage.setItem('reptiltrack_webhook_url', webhookUrl);
     setShowSettings(false);
+  };
+
+  const fileInputRef = useRef(null);
+
+  const handleExportData = () => {
+    const data = {
+      animals: JSON.parse(localStorage.getItem('reptiltrack_animals') || '[]'),
+      terrariums: JSON.parse(localStorage.getItem('reptiltrack_terrariums') || '[]'),
+      equipments: JSON.parse(localStorage.getItem('reptiltrack_equipments') || '[]'),
+      foods: JSON.parse(localStorage.getItem('reptiltrack_foods') || '[]'),
+      settings: JSON.parse(localStorage.getItem('reptiltrack_settings') || '{}')
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reptiltrack-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportData = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.animals) localStorage.setItem('reptiltrack_animals', JSON.stringify(data.animals));
+        if (data.terrariums) localStorage.setItem('reptiltrack_terrariums', JSON.stringify(data.terrariums));
+        if (data.equipments) localStorage.setItem('reptiltrack_equipments', JSON.stringify(data.equipments));
+        if (data.foods) localStorage.setItem('reptiltrack_foods', JSON.stringify(data.foods));
+        if (data.settings) localStorage.setItem('reptiltrack_settings', JSON.stringify(data.settings));
+        
+        alert("✅ Restauration réussie ! L'application va se recharger.");
+        window.location.reload();
+      } catch (err) {
+        alert("❌ Erreur lors de la lecture du fichier de sauvegarde. Assurez-vous qu'il s'agit d'un fichier .json valide provenant de ReptilTrack.");
+      }
+    };
+    reader.readAsText(file);
   };
 
   const navItems = [
@@ -67,6 +112,30 @@ export function Layout() {
                     <Check size={16} />
                   </button>
                 </div>
+                </div>
+
+                <hr style={{ border: 'none', borderTop: '1px solid var(--border-light)', margin: '1.5rem 0' }} />
+
+                <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--primary)', marginBottom: '1rem' }}>SAUVEGARDE DES DONNÉES</h4>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', lineHeight: '1.4' }}>
+                  Vos données sont stockées localement sur ce navigateur. Pensez à exporter régulièrement une sauvegarde (fichier .json) et conservez-la précieusement !
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <button onClick={handleExportData} className="btn" style={{ padding: '0.5rem', fontSize: '0.8rem', background: 'rgba(78, 222, 163, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Download size={16} style={{ marginRight: '6px' }} /> Exporter
+                  </button>
+                  <button onClick={() => fileInputRef.current.click()} className="btn" style={{ padding: '0.5rem', fontSize: '0.8rem', background: 'rgba(255, 180, 171, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Upload size={16} style={{ marginRight: '6px' }} /> Importer
+                  </button>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    style={{ display: 'none' }} 
+                    accept=".json" 
+                    onChange={handleImportData}
+                  />
+                </div>
+
               </div>
             )}
          </div>
