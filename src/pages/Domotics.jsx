@@ -10,7 +10,7 @@ export function Domotics() {
     type: "plug", 
     provider: "switchbot", 
     deviceId: "",
-    terrariumId: "" 
+    terrariumIds: [] 
   });
 
   const deviceTypes = [
@@ -35,7 +35,7 @@ export function Domotics() {
     };
     setDomotics([...domotics, device]);
     setShowAddModal(false);
-    setNewDevice({ name: "", type: "plug", provider: "switchbot", deviceId: "", terrariumId: "" });
+    setNewDevice({ name: "", type: "plug", provider: "switchbot", deviceId: "", terrariumIds: [] });
   };
 
   const togglePlug = (id) => {
@@ -85,7 +85,7 @@ export function Domotics() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
           {domotics.map(device => {
-            const terra = terrariums.find(t => t.id === device.terrariumId);
+            const selectedTerras = terrariums.filter(t => device.terrariumIds?.includes(t.id));
             const isPlug = device.type === 'plug';
             const isOn = device.status === 'on';
 
@@ -111,9 +111,16 @@ export function Domotics() {
                     </div>
                     <div>
                       <h4 style={{ margin: 0 }}>{device.name}</h4>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.3rem' }}>
                         <span>{providers.find(p => p.id === device.provider)?.label}</span>
-                        {terra && <span>• {terra.name}</span>}
+                        {selectedTerras.length > 0 && (
+                          <>
+                            <span>•</span>
+                            {selectedTerras.map((t, idx) => (
+                              <span key={t.id}>{t.name}{idx < selectedTerras.length - 1 ? ',' : ''}</span>
+                            ))}
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -237,14 +244,35 @@ export function Domotics() {
               </div>
 
               <div className="form-group" style={{ marginBottom: '2rem' }}>
-                <label>Terrarium associé</label>
-                <select 
-                  value={newDevice.terrariumId}
-                  onChange={e => setNewDevice({...newDevice, terrariumId: e.target.value})}
-                >
-                  <option value="">-- Aucun --</option>
-                  {terrariums.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
+                <label>Terrariums associés</label>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '1fr 1fr', 
+                  gap: '0.5rem', 
+                  maxHeight: '120px', 
+                  overflowY: 'auto',
+                  padding: '0.5rem',
+                  background: 'rgba(0,0,0,0.1)',
+                  borderRadius: '8px'
+                }}>
+                  {terrariums.map(t => (
+                    <label key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={newDevice.terrariumIds?.includes(t.id)}
+                        onChange={(e) => {
+                          const ids = newDevice.terrariumIds || [];
+                          if (e.target.checked) {
+                            setNewDevice({...newDevice, terrariumIds: [...ids, t.id]});
+                          } else {
+                            setNewDevice({...newDevice, terrariumIds: ids.filter(id => id !== t.id)});
+                          }
+                        }}
+                      />
+                      {t.name}
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '1rem' }}>
