@@ -23,6 +23,7 @@
   --warning: #f59e0b;
   
   --border-light: rgba(134, 148, 138, 0.15);
+  --bg-panel-secondary: rgba(9, 15, 21, 0.4);
   
   /* Typography */
   --font-body: 'Manrope', -apple-system, sans-serif;
@@ -58,10 +59,11 @@ body.light-mode {
   --warning: #d35400;
   
   --border-light: rgba(58, 90, 64, 0.15);
+  --bg-panel-secondary: #e5e1d3;
 }
 
 body.light-mode h1, body.light-mode h2, body.light-mode h3, body.light-mode h4, body.light-mode h5, body.light-mode h6 {
-  color: #2b3531 !important;
+  color: var(--text-main) !important;
   letter-spacing: -0.015em;
 }
 
@@ -163,7 +165,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   font-weight: 700;
   letter-spacing: -0.03em;
-  color: #fff;
+  color: var(--text-main);
 }
 
 a {
