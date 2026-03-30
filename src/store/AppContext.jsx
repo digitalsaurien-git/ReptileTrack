@@ -109,7 +109,7 @@ export function AppProvider({ children }) {
     setUser(null);
     setIsGuest(true);
     localStorage.removeItem('reptiltrack_is_guest');
-    navigate('/login');
+    window.location.href = '#/login'; // Utilise le hash si routing hash, ou juste /login
   };
 
   const value = {
