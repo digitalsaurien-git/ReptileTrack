@@ -1,16 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../store/AppContext';
-import { Plus, Search, Info, ShieldCheck, AlertCircle, ChevronRight, X } from 'lucide-react';
+import { Plus, Search, Info, ShieldCheck, AlertCircle, ChevronRight, X, LayoutGrid, List, Utensils } from 'lucide-react';
 import { Snake } from '../components/icons/Snake' ;
 import { getPlaceholderImage } from '../utils/imageUtils';
 import { speciesList } from '../data/species';
 
 export function Animals() {
-  const { animals, setAnimals } = useAppContext();
+  const { animals, setAnimals, foods, setFoods } = useAppContext();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState(localStorage.getItem('reptiltrack_viewmode') || 'gallery');
+  
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    localStorage.setItem('reptiltrack_viewmode', mode);
+  };
+
   const familyFilter = searchParams.get('family');
   
   const filteredAnimals = animals.filter(a => {
@@ -29,6 +36,44 @@ export function Animals() {
   const clearFilters = () => {
     setSearchParams({});
     setSearchTerm('');
+  };
+
+  const handleQuickFeed = async (animal, e) => {
+    e.stopPropagation();
+    
+    if (!animal.defaultFoodId || !animal.defaultFoodQuantity) {
+      alert("⚠️ Veuillez configurer la proie habituelle de cet animal dans sa fiche détaillée pour utiliser cette fonction.");
+      return;
+    }
+    const selectedFood = foods.find(f => f.id === animal.defaultFoodId);
+    if (!selectedFood) {
+      alert("⚠️ La proie habituelle configurée n'existe plus dans le stock.");
+      return;
+    }
+
+    const remainingStock = selectedFood.stock - animal.defaultFoodQuantity;
+    
+    const updatedFoods = foods.map(f => f.id === selectedFood.id ? { ...f, stock: remainingStock } : f);
+    setFoods(updatedFoods);
+
+    if (remainingStock <= selectedFood.alertThreshold) {
+      alert(`⚠️ Attention: Le stock de ${selectedFood.name} est au plus bas (${remainingStock} restants).`);
+      const webhookUrl = localStorage.getItem('reptiltrack_webhook_url');
+      if (webhookUrl) {
+        try {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'stock_alert', foodName: selectedFood.name, stockRemaining: remainingStock, threshold: selectedFood.alertThreshold, timestamp: new Date().toISOString() })
+          });
+        } catch (err) {}
+      }
+    }
+
+    const newHistoryEvent = { id: crypto.randomUUID(), type: 'repas', date: new Date().toISOString().split('T')[0], foodId: selectedFood.id, foodName: selectedFood.name, quantity: animal.defaultFoodQuantity, notes: "Nourrissage rapide depuis la liste" };
+    const newAnimal = { ...animal, history: [newHistoryEvent, ...(animal.history || [])] };
+    const updatedList = animals.map(a => a.id === animal.id ? newAnimal : a);
+    setAnimals(updatedList);
   };
 
   const handleQuickAdd = () => {
@@ -68,8 +113,8 @@ export function Animals() {
       </header>
 
       <div className="glass-panel" style={{ marginBottom: '3rem', padding: '1.25rem 2rem' }}>
-        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', flex: 1 }}>
+        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', flex: 1, minWidth: '300px' }}>
             <Search size={22} color="var(--primary)" />
             <input 
               type="text" 
@@ -79,25 +124,46 @@ export function Animals() {
               style={{ border: 'none', background: 'transparent', padding: 0, width: '100%' }}
             />
           </div>
-          {familyFilter && (
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.75rem', 
-              background: 'var(--primary-glow)', 
-              padding: '0.4rem 1rem', 
-              borderRadius: '20px',
-              border: '1.5px solid var(--primary)',
-              color: 'var(--primary)',
-              fontSize: '0.8rem',
-              fontWeight: 700
-            }}>
-              <span>Famille: {familyFilter}</span>
-              <button onClick={clearFilters} style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}>
-                <X size={16} color="var(--primary)" />
+          
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            {familyFilter && (
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.75rem', 
+                background: 'var(--primary-glow)', 
+                padding: '0.4rem 1rem', 
+                borderRadius: '20px',
+                border: '1.5px solid var(--primary)',
+                color: 'var(--primary)',
+                fontSize: '0.8rem',
+                fontWeight: 700
+              }}>
+                <span>Famille: {familyFilter}</span>
+                <button onClick={clearFilters} style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}>
+                  <X size={16} color="var(--primary)" />
+                </button>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '0.25rem', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '0.25rem', background: 'rgba(0,0,0,0.2)' }}>
+              <button 
+                onClick={() => handleViewModeChange('gallery')} 
+                className={`btn ${viewMode === 'gallery' ? 'btn-primary' : ''}`} 
+                style={{ padding: '0.4rem', background: viewMode === 'gallery' ? 'var(--primary)' : 'transparent', border: 'none' }} 
+                title="Vue Galerie"
+              >
+                <LayoutGrid size={16} />
+              </button>
+              <button 
+                onClick={() => handleViewModeChange('list')} 
+                className={`btn ${viewMode === 'list' ? 'btn-primary' : ''}`} 
+                style={{ padding: '0.4rem', background: viewMode === 'list' ? 'var(--primary)' : 'transparent', border: 'none' }} 
+                title="Vue Liste"
+              >
+                <List size={16} />
               </button>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -107,8 +173,48 @@ export function Animals() {
           <h3 style={{ color: 'var(--text-main)', marginBottom: '0.5rem' }}>Aucun specimen trouvé</h3>
           <p>Commencez par ajouter votre premier pensionnaire à la collection.</p>
         </div>
+      ) : viewMode === 'list' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingBottom: '3rem' }}>
+          {filteredAnimals.map(animal => (
+            <div 
+              key={animal.id} 
+              className="glass-card"
+              onClick={() => navigate(`/animals/${animal.id}`)}
+              style={{ padding: '0.8rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', cursor: 'pointer', transition: 'all 0.2s ease', borderLeft: animal.status !== 'vivant' ? '4px solid var(--text-muted)' : '4px solid var(--primary)' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flex: 1 }}>
+                <img 
+                  src={animal.photoUrl || getPlaceholderImage(animal)} 
+                  alt={animal.commonName} 
+                  style={{ width: '45px', height: '45px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-light)' }} 
+                />
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#fff', marginBottom: '0.1rem', textTransform: 'uppercase' }}>
+                    {animal.nickname || animal.commonName || 'Specimen'}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    {animal.nickname ? animal.commonName : (animal.scientificName || 'Espèce inconnue')}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={(e) => handleQuickFeed(animal, e)}
+                  style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderColor: 'rgba(255, 107, 0, 0.4)', color: '#ff6b00', background: 'rgba(255, 107, 0, 0.05)' }}
+                  title="Nourrir cet animal"
+                >
+                  <Utensils size={15} /> 
+                  <span className="hide-mobile">Il a mangé !</span>
+                </button>
+                <ChevronRight size={20} color="var(--primary)" opacity={0.6} />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem', paddingBottom: '3rem' }}>
           {filteredAnimals.map(animal => (
             <div 
               key={animal.id} 
