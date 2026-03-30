@@ -10,12 +10,20 @@ import { Terrariums } from "./pages/Terrariums";
 import { Equipments } from "./pages/Equipments";
 import { Foods } from "./pages/Foods";
 import { Finances } from "./pages/Finances";
+import { Login } from "./pages/Login";
+import { useAppContext } from "./store/AppContext";
 
 function App() {
+  const { user, loading } = useAppContext();
+
+  if (loading) return null;
+
   return (
-    <AppProvider>
-      <BrowserRouter basename={import.meta.env.BASE_URL}>
-        <Routes>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <Routes>
+        {!user ? (
+          <Route path="*" element={<Login />} />
+        ) : (
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="animals" element={<Animals />} />
@@ -25,9 +33,9 @@ function App() {
             <Route path="foods" element={<Foods />} />
             <Route path="finances" element={<Finances />} />
           </Route>
-        </Routes>
-      </BrowserRouter>
-    </AppProvider>
+        )}
+      </Routes>
+    </BrowserRouter>
   );
 }
 
