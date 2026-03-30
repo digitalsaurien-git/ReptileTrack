@@ -4,7 +4,7 @@ import { useAppContext } from '../store/AppContext';
 import { 
   ChevronLeft, Save, Plus, Trash2, Camera, MapPin, 
   Bone, Activity, FileText, Info, Calendar, ClipboardList,
-  Scale, Shield, Truck, Printer, Euro, Zap, Send
+  Scale, Shield, Truck, Printer, Euro, Zap, Send, Edit2
 } from 'lucide-react';
 import { speciesList } from '../data/species';
 import { getPlaceholderImage } from '../utils/imageUtils';
@@ -107,6 +107,41 @@ export function AnimalDetail() {
       documents: [doc, ...(animal.documents || [])]
     });
     setNewDoc({ name: '', type: 'facture', date: new Date().toISOString().split('T')[0], ref: '' });
+  };
+  
+  const handleDeleteEvent = (eventId) => {
+    const eventToDelete = animal.history.find(e => e.id === eventId);
+    if (!eventToDelete) return;
+
+    if (window.confirm("Supprimer cet évènement ?")) {
+      // Restaurer le stock si c'était un repas
+      if (eventToDelete.type === 'repas' && eventToDelete.foodId && eventToDelete.quantity) {
+        const food = foods.find(f => f.id === eventToDelete.foodId);
+        if (food) {
+          const updatedFoods = foods.map(f => 
+            f.id === food.id ? { ...f, stock: f.stock + eventToDelete.quantity } : f
+          );
+          setFoods(updatedFoods);
+        }
+      }
+
+      const updatedHistory = animal.history.filter(e => e.id !== eventId);
+      const updatedAnimal = { ...animal, history: updatedHistory };
+      setAnimal(updatedAnimal);
+      
+      // Sauvegarde automatique dans la liste globale
+      const updatedList = animals.map(a => a.id === id ? updatedAnimal : a);
+      setAnimals(updatedList);
+    }
+  };
+
+  const handleEditEvent = (event) => {
+    setNewEvent({
+      ...event,
+      date: event.date.split('T')[0] // S'assurer du format pour l'input date
+    });
+    // On scroll vers le formulaire
+    window.scrollTo({ top: 300, behavior: 'smooth' });
   };
 
   const handleDeleteDoc = (docId) => {
@@ -761,8 +796,26 @@ export function AnimalDetail() {
                     <div className="glass-card" style={{ flex: 1, padding: '1.25rem', cursor: 'default' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                         <span className="badge" style={{ background: 'rgba(78, 222, 163, 0.1)', color: 'var(--primary)' }}>{item.type}</span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                          <Calendar size={12} /> {new Date(item.date).toLocaleDateString()}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                            <Calendar size={12} /> {new Date(item.date).toLocaleDateString()}
+                          </span>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button 
+                              onClick={() => handleEditEvent(item)}
+                              title="Modifier" 
+                              style={{ background: 'transparent', border: 'none', color: 'var(--primary)', padding: 0, cursor: 'pointer', opacity: 0.7 }}
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteEvent(item.id)}
+                              title="Supprimer" 
+                              style={{ background: 'transparent', border: 'none', color: 'var(--danger)', padding: 0, cursor: 'pointer', opacity: 0.7 }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                       
