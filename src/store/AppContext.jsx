@@ -13,6 +13,7 @@ export function AppProvider({ children }) {
   const [terrariums, setTerrariums] = useLocalStorage("reptiltrack_terrariums", []);
   const [equipments, setEquipments] = useLocalStorage("reptiltrack_equipments", []);
   const [foods, setFoods] = useLocalStorage("reptiltrack_foods", []);
+  const [domotics, setDomotics] = useLocalStorage("reptiltrack_domotics", []);
   const [settings, setSettings] = useLocalStorage("reptiltrack_settings", { kwhPrice: 0.25 });
   const [theme, setTheme] = useLocalStorage("reptiltrack_theme", "dark");
 
@@ -110,6 +111,7 @@ export function AppProvider({ children }) {
       terrariums, setTerrariums,
       equipments, setEquipments,
       foods, setFoods,
+      domotics, setDomotics,
       settings, setSettings,
       theme, toggleTheme
     }}>

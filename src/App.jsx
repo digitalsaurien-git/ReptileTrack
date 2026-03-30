@@ -10,6 +10,7 @@ import { Terrariums } from "./pages/Terrariums";
 import { Equipments } from "./pages/Equipments";
 import { Foods } from "./pages/Foods";
 import { Finances } from "./pages/Finances";
+import { Domotics } from "./pages/Domotics";
 import { Login } from "./pages/Login";
 import { useAppContext } from "./store/AppContext";
 
@@ -32,6 +33,7 @@ function App() {
             <Route path="equipments" element={<Equipments />} />
             <Route path="foods" element={<Foods />} />
             <Route path="finances" element={<Finances />} />
+            <Route path="domotics" element={<Domotics />} />
           </Route>
         )}
       </Routes>

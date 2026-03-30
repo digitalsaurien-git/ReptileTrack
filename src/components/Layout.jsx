@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Home, Plug, Settings, Sun, Moon, Euro, X, Check, Drumstick, Download, Upload, LogOut } from "lucide-react";
+import { LayoutDashboard, Home, Plug, Settings, Sun, Moon, Euro, X, Check, Drumstick, Download, Upload, LogOut, Smartphone } from "lucide-react";
 import { Snake } from "./icons/Snake";
 import { useAppContext } from "../store/AppContext";
 import "./Layout.css";
@@ -71,7 +71,8 @@ export function Layout() {
     { to: "/terrariums", icon: <Home size={24} />, label: "Terrariums" },
     { to: "/equipments", icon: <Plug size={24} />, label: "Matériel" },
     { to: "/foods", icon: <Drumstick size={24} />, label: "Nourriture" },
-    { to: "/finances", icon: <Euro size={24} />, label: "Bilan" }
+    { to: "/finances", icon: <Euro size={24} />, label: "Bilan" },
+    { to: "/domotics", icon: <Smartphone size={24} />, label: "Domotique" }
   ];
 
   return (
