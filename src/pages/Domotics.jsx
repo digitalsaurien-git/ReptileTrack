@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAppContext } from "../store/AppContext";
-import { Smartphone, Plus, Power, Thermometer, RefreshCw, Trash2, Settings2, Info } from "lucide-react";
+import { Smartphone, Plus, Power, Thermometer, Camera, RefreshCw, Trash2, Settings2, Info, X } from "lucide-react";
 
 export function Domotics() {
   const { domotics, setDomotics, terrariums, theme } = useAppContext();
@@ -319,21 +319,4 @@ export function Domotics() {
   );
 }
 
-// Simple internal X component for the modal if not imported
-const X = ({ size, style, onClick }) => (
-  <svg 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    style={style}
-    onClick={onClick}
-  >
-    <line x1="18" y1="6" x2="6" y2="18"></line>
-    <line x1="6" y1="6" x2="18" y2="18"></line>
-  </svg>
-);
+// X is now imported from lucide-react
