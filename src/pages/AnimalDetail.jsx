@@ -12,11 +12,11 @@ import { getPlaceholderImage } from '../utils/imageUtils';
 export function AnimalDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { animals, setAnimals, terrariums } = useAppContext();
+  const { animals, setAnimals, terrariums, foods, setFoods } = useAppContext();
   
   const [animal, setAnimal] = useState(null);
   const [activeTab, setActiveTab] = useState('infos');
-  const [newEvent, setNewEvent] = useState({ type: 'repas', date: new Date().toISOString().split('T')[0], notes: '' });
+  const [newEvent, setNewEvent] = useState({ type: 'repas', date: new Date().toISOString().split('T')[0], notes: '', foodId: '', quantity: 1 });
   const [newDoc, setNewDoc] = useState({ name: '', type: 'facture', date: new Date().toISOString().split('T')[0], ref: '' });
 
   const [isSending, setIsSending] = useState(false);
@@ -46,16 +46,56 @@ export function AnimalDetail() {
     }
   };
 
-  const handleAddEvent = (e) => {
+  const handleAddEvent = async (e) => {
     e.preventDefault();
     if (!newEvent.date || !newEvent.type) return;
     
-    const event = { ...newEvent, id: crypto.randomUUID() };
+    let historyEvent = { ...newEvent, id: crypto.randomUUID() };
+
+    // Gestion du repas et des stocks
+    if (newEvent.type === 'repas' && newEvent.foodId) {
+      const selectedFood = foods.find(f => f.id === newEvent.foodId);
+      if (selectedFood) {
+        historyEvent.foodName = selectedFood.name;
+        const remainingStock = selectedFood.stock - newEvent.quantity;
+        
+        // Mettre à jour le stock localement
+        const updatedFoods = foods.map(f => 
+          f.id === selectedFood.id ? { ...f, stock: remainingStock } : f
+        );
+        setFoods(updatedFoods);
+
+        // Vérification seuil d'alerte
+        if (remainingStock <= selectedFood.alertThreshold) {
+          alert(`⚠️ Le stock de ${selectedFood.name} est faible (${remainingStock} restants).`);
+          
+          const webhookUrl = localStorage.getItem('reptiltrack_webhook_url');
+          if (webhookUrl) {
+            try {
+              await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  type: 'stock_alert',
+                  foodName: selectedFood.name,
+                  stockRemaining: remainingStock,
+                  threshold: selectedFood.alertThreshold,
+                  timestamp: new Date().toISOString()
+                })
+              });
+            } catch (err) {
+              console.error("Erreur Webhook alerte stock:", err);
+            }
+          }
+        }
+      }
+    }
+
     setAnimal({
       ...animal,
-      history: [event, ...(animal.history || [])]
+      history: [historyEvent, ...(animal.history || [])]
     });
-    setNewEvent({ type: 'repas', date: new Date().toISOString().split('T')[0], notes: '' });
+    setNewEvent({ type: 'repas', date: new Date().toISOString().split('T')[0], notes: '', foodId: '', quantity: 1 });
   };
 
   const handleAddDoc = (e) => {
@@ -116,6 +156,77 @@ export function AnimalDetail() {
     }
   };
 
+  const lastMealEvent = animal?.history?.find(e => e.type === 'repas');
+  const lastMealDate = lastMealEvent ? new Date(lastMealEvent.date) : null;
+  let nextMealDate = null;
+  if (lastMealDate && animal?.feedingFrequency) {
+    nextMealDate = new Date(lastMealDate);
+    nextMealDate.setDate(nextMealDate.getDate() + parseInt(animal.feedingFrequency));
+  }
+
+  const handleFeedNow = async () => {
+    if (!animal.defaultFoodId || !animal.defaultFoodQuantity) {
+      alert("⚠️ Veuillez configurer la proie habituelle de cet animal (onglet Identité) pour utiliser cette fonction.");
+      return;
+    }
+    const selectedFood = foods.find(f => f.id === animal.defaultFoodId);
+    if (!selectedFood) {
+      alert("⚠️ La proie habituelle configurée n'existe plus dans le stock.");
+      return;
+    }
+
+    const remainingStock = selectedFood.stock - animal.defaultFoodQuantity;
+    
+    // Mettre à jour le stock
+    const updatedFoods = foods.map(f => 
+      f.id === selectedFood.id ? { ...f, stock: remainingStock } : f
+    );
+    setFoods(updatedFoods);
+
+    // Vérification seuil d'alerte
+    if (remainingStock <= selectedFood.alertThreshold) {
+      alert(`⚠️ Attention : Le stock de ${selectedFood.name} est au plus bas (${remainingStock} restants).`);
+      
+      const webhookUrl = localStorage.getItem('reptiltrack_webhook_url');
+      if (webhookUrl) {
+        try {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'stock_alert',
+              foodName: selectedFood.name,
+              stockRemaining: remainingStock,
+              threshold: selectedFood.alertThreshold,
+              timestamp: new Date().toISOString()
+            })
+          });
+        } catch (err) {}
+      }
+    }
+
+    const newHistoryEvent = {
+      id: crypto.randomUUID(),
+      type: 'repas',
+      date: new Date().toISOString().split('T')[0],
+      foodId: selectedFood.id,
+      foodName: selectedFood.name,
+      quantity: animal.defaultFoodQuantity,
+      notes: "Nourrissage rapide"
+    };
+
+    const newAnimal = {
+      ...animal,
+      history: [newHistoryEvent, ...(animal.history || [])]
+    };
+    
+    setAnimal(newAnimal);
+    
+    // Auto-save logic
+    const updatedList = animals.map(a => a.id === id ? newAnimal : a);
+    setAnimals(updatedList);
+  };
+
   return (
     <div className="animate-fade-in print-container">
       <header className="no-print" style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
@@ -165,6 +276,23 @@ export function AnimalDetail() {
             {tab.icon} {tab.label}
           </button>
         ))}
+      </div>
+
+      <div className="no-print" style={{ marginBottom: '2rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: '300px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(78, 222, 163, 0.05)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(78, 222, 163, 0.2)' }}>
+          <div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Dernier Repas</div>
+            <div style={{ fontWeight: 600, color: lastMealDate ? '#fff' : 'var(--warning)', fontSize: '1.1rem' }}>
+              {lastMealDate ? lastMealDate.toLocaleDateString() : 'Aucun repas enregistré'}
+            </div>
+            {animal.feedingFrequency && <div style={{ fontSize: '0.8rem', color: 'var(--primary)', marginTop: '0.25rem' }}>
+              Prochain prévu le: {nextMealDate ? nextMealDate.toLocaleDateString() : 'N/A'}
+            </div>}
+          </div>
+          <button onClick={handleFeedNow} className="btn btn-primary" style={{ padding: '0.75rem 1.5rem', fontWeight: 700, fontSize: '1.1rem' }}>
+            🍖 IL A MANGÉ !
+          </button>
+        </div>
       </div>
 
       {activeTab === 'infos' && (
@@ -267,6 +395,35 @@ export function AnimalDetail() {
                     <option value="vendu">Vendu / Cédé</option>
                     <option value="malade">Malade</option>
                   </select>
+                </div>
+             </div>
+
+             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: 'var(--radius-sm)' }}>
+                <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-main)', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem' }}>Régime Alimentaire Type (Action Rapide)</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+                  <div>
+                    <label>Proie Habituelle</label>
+                    <select value={animal.defaultFoodId || ''} onChange={e => updateField('defaultFoodId', e.target.value)}>
+                      <option value="">Sélectionner une proie...</option>
+                      {foods.map(f => (
+                        <option key={f.id} value={f.id}>{f.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label>Qté (par repas)</label>
+                    <input type="number" min="1" value={animal.defaultFoodQuantity || 1} onChange={e => updateField('defaultFoodQuantity', parseInt(e.target.value) || 1)} />
+                  </div>
+                  <div>
+                     <label>Fréquence (jours)</label>
+                     <input 
+                       type="number" 
+                       min="1"
+                       placeholder="Ex: 7"
+                       value={animal.feedingFrequency || ''} 
+                       onChange={e => updateField('feedingFrequency', parseInt(e.target.value) || '')} 
+                     />
+                  </div>
                 </div>
              </div>
 
@@ -528,6 +685,30 @@ export function AnimalDetail() {
                   <option value="autre">📝 Autre observation</option>
                 </select>
               </div>
+
+              {newEvent.type === 'repas' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', background: 'rgba(78, 222, 163, 0.05)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(78, 222, 163, 0.2)' }}>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>Proie</label>
+                    <select value={newEvent.foodId} onChange={e => setNewEvent({...newEvent, foodId: e.target.value})}>
+                      <option value="">Sélectionner une proie...</option>
+                      {foods.map(f => (
+                        <option key={f.id} value={f.id}>{f.name} (Stock: {f.stock})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>Quantité</label>
+                    <input 
+                      type="number" 
+                      min="1"
+                      value={newEvent.quantity} 
+                      onChange={e => setNewEvent({...newEvent, quantity: parseInt(e.target.value) || 1 })} 
+                    />
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label>Date de l'évènement</label>
                 <input type="date" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} />
@@ -584,6 +765,13 @@ export function AnimalDetail() {
                           <Calendar size={12} /> {new Date(item.date).toLocaleDateString()}
                         </div>
                       </div>
+                      
+                      {item.type === 'repas' && item.foodName && (
+                        <div style={{ marginBottom: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', borderLeft: '2px solid var(--primary)', fontSize: '0.85rem' }}>
+                          🍗 <strong>Nourriture:</strong> {item.quantity}x {item.foodName}
+                        </div>
+                      )}
+
                       {item.notes && <p style={{ fontSize: '0.9rem', color: '#fff', opacity: 0.9 }}>{item.notes}</p>}
                     </div>
                   </div>

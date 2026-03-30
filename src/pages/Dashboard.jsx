@@ -1,6 +1,6 @@
 import { useAppContext } from '../store/AppContext';
 import { calculateDailyCost, formatCurrency } from '../utils/costCalculator';
-import { Zap, Home, Activity, TrendingUp } from 'lucide-react';
+import { Zap, Home, Activity, TrendingUp, AlertCircle, Utensils } from 'lucide-react';
 import { Snake } from '../components/icons/Snake';
 import { useNavigate } from 'react-router-dom';
 import { speciesList } from '../data/species';
@@ -11,6 +11,19 @@ export function Dashboard() {
 
   const totalCostDay = equipments.reduce((sum, e) => sum + calculateDailyCost(e.watts, e.hoursPerDay, settings.kwhPrice), 0);
   
+  const animalsToFeed = animals.filter(a => {
+    if (!a.feedingFrequency) return false;
+    const lastMeal = (a.history || []).find(e => e.type === 'repas');
+    if (!lastMeal) return true; // Jamais nourri dans l'appli mais a une fréquence -> à nourrir
+    
+    const nextDate = new Date(lastMeal.date);
+    nextDate.setDate(nextDate.getDate() + parseInt(a.feedingFrequency));
+    nextDate.setHours(0,0,0,0);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    return today >= nextDate;
+  });
+
   const allEvents = animals.flatMap(a => 
     (a.history || []).map(event => ({ ...event, animalName: a.commonName || 'Inconnu', animalId: a.id }))
   ).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 6);
@@ -30,6 +43,32 @@ export function Dashboard() {
         <p style={{ color: 'var(--text-muted)' }}>Gérez votre collection avec précision et soin.</p>
       </header>
       
+      {animalsToFeed.length > 0 && (
+        <div style={{ marginBottom: '3rem', animation: 'pulse-glow 2s infinite' }} className="animate-fade-in">
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--warning)' }}>
+            <Utensils size={22} /> Nourrissage Requis ({animalsToFeed.length})
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
+            {animalsToFeed.map(animal => (
+              <div 
+                key={animal.id} 
+                onClick={() => navigate(`/animals/${animal.id}`)}
+                className="glass-card" 
+                style={{ padding: '1rem', borderLeft: '3px solid var(--warning)', cursor: 'pointer', background: 'rgba(245, 158, 11, 0.05)' }}
+              >
+                <div style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '0.25rem' }}>{animal.nickname || animal.commonName || 'Inconnu'}</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  {animal.nickname ? animal.commonName : ''} 
+                </div>
+                <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  {animal.defaultFoodId ? '✅ Proie par défaut configurée' : '⚠️ Configuration requise'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '4rem' }}>
         
         <div className="glass-card" onClick={() => navigate('/animals')} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderLeft: '4px solid var(--primary)' }}>

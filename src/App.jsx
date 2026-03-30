@@ -8,6 +8,7 @@ import { Animals } from "./pages/Animals";
 import { AnimalDetail } from "./pages/AnimalDetail";
 import { Terrariums } from "./pages/Terrariums";
 import { Equipments } from "./pages/Equipments";
+import { Foods } from "./pages/Foods";
 import { Finances } from "./pages/Finances";
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
             <Route path="animals/:id" element={<AnimalDetail />} />
             <Route path="terrariums" element={<Terrariums />} />
             <Route path="equipments" element={<Equipments />} />
+            <Route path="foods" element={<Foods />} />
             <Route path="finances" element={<Finances />} />
           </Route>
         </Routes>
