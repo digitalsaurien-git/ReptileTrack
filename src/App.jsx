@@ -14,14 +14,14 @@ import { Login } from "./pages/Login";
 import { useAppContext } from "./store/AppContext";
 
 function App() {
-  const { user, loading } = useAppContext();
+  const { user, loading, isGuest } = useAppContext();
 
   if (loading) return null;
 
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
-        {!user ? (
+        {(!user && !isGuest) ? (
           <Route path="*" element={<Login />} />
         ) : (
           <Route path="/" element={<Layout />}>

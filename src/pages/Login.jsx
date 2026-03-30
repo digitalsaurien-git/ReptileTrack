@@ -4,7 +4,7 @@ import { Snake } from "../components/icons/Snake";
 import { LogIn, Mail, Loader2 } from "lucide-react";
 
 export function Login() {
-  const { loginWithGoogle, loginWithEmail, theme } = useAppContext();
+  const { loginWithGoogle, loginWithEmail, theme, setIsGuest } = useAppContext();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -95,7 +95,17 @@ export function Login() {
           Google (si configuré)
         </button>
 
-        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2rem' }}>
+        <div style={{ marginTop: '2rem' }}>
+          <button 
+            onClick={() => setIsGuest(true)}
+            className="btn" 
+            style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textDecoration: 'underline', background: 'transparent' }}
+          >
+            Utiliser sans compte (Mode Local)
+          </button>
+        </div>
+
+        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '1.5rem' }}>
           Vos données seront automatiquement synchronisées sur tous vos appareils.
         </p>
       </div>

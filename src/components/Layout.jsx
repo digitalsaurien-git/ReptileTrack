@@ -17,6 +17,11 @@ export function Layout() {
 
   const fileInputRef = useRef(null);
 
+  const handleLogout = () => {
+    logout();
+    setIsGuest(false);
+  };
+
   const handleExportData = () => {
     const data = {
       animals: JSON.parse(localStorage.getItem('reptiltrack_animals') || '[]'),
@@ -139,12 +144,15 @@ export function Layout() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    Connecté en tant que : <br/>
-                    <strong style={{ color: 'var(--text-main)' }}>{user?.email}</strong>
+                    {user ? (
+                      <>Connecté en tant que : <br/><strong style={{ color: 'var(--text-main)' }}>{user.email}</strong></>
+                    ) : (
+                      <>Mode : <strong style={{ color: 'var(--text-main)' }}>Invité (Local)</strong></>
+                    )}
                   </div>
-                  <button onClick={logout} className="btn" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', color: 'var(--text-main)', border: '1px solid var(--border-light)', padding: '0.75rem', gap: '0.75rem' }}>
+                  <button onClick={handleLogout} className="btn" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', color: 'var(--text-main)', border: '1px solid var(--border-light)', padding: '0.75rem', gap: '0.75rem' }}>
                     <LogOut size={16} />
-                    Se déconnecter
+                    {user ? "Se déconnecter" : "Quitter le mode local"}
                   </button>
                 </div>
 

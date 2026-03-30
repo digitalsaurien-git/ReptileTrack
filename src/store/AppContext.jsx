@@ -7,6 +7,7 @@ const AppContext = createContext();
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isGuest, setIsGuest] = useLocalStorage("reptiltrack_is_guest", false);
 
   const [animals, setAnimals] = useLocalStorage("reptiltrack_animals", []);
   const [terrariums, setTerrariums] = useLocalStorage("reptiltrack_terrariums", []);
@@ -103,7 +104,7 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={{
-      user, loading,
+      user, loading, isGuest, setIsGuest,
       loginWithGoogle, loginWithEmail, logout,
       animals, setAnimals,
       terrariums, setTerrariums,
