@@ -6,7 +6,7 @@ import { useAppContext } from "../store/AppContext";
 import "./Layout.css";
 
 export function Layout() {
-  const { theme, toggleTheme, signOut, user, isGuest, setIsGuest, exportData, importData } = useAppContext();
+  const { theme, toggleTheme, signOut, user, isGuest, setIsGuest, exportData, importData, googleSyncEnabled, connectGoogleDrive, googleDriveReady, lastSync } = useAppContext();
   const [showSettings, setShowSettings] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState(localStorage.getItem('reptiltrack_webhook_url') || '');
 
@@ -147,6 +147,13 @@ export function Layout() {
                   <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" width="18" alt="Google Drive" />
                   {googleSyncEnabled ? "Drive Connecté" : "Connecter mon Drive"}
                 </button>
+
+                {googleSyncEnabled && lastSync && (
+                  <div style={{ fontSize: '0.65rem', color: 'var(--primary)', marginTop: '0.5rem', textAlign: 'center', opacity: 0.8 }}>
+                    Dernière sauvegarde : {typeof lastSync === 'string' ? new Date(lastSync).toLocaleTimeString() : 'En attente...'}
+                  </div>
+                )}
+
 
                 <hr style={{ border: 'none', borderTop: '1px solid var(--border-light)', margin: '1.5rem 0' }} />
 

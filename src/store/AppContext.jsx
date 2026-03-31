@@ -18,6 +18,7 @@ export function AppProvider({ children }) {
   const [settings, setSettings] = useLocalStorage("reptiltrack_settings", { kwhPrice: 0.25 });
   const [googleSyncEnabled, setGoogleSyncEnabled] = useLocalStorage("reptiltrack_google_sync", false);
   const [googleDriveReady, setGoogleDriveReady] = useState(false);
+  const [lastSync, setLastSync] = useLocalStorage("reptiltrack_last_sync", null);
   const [theme, setTheme] = useLocalStorage("reptiltrack_theme", "dark");
 
   // --- AUTH LOGIC ---
@@ -133,7 +134,8 @@ export function AppProvider({ children }) {
     const sync = async () => {
       if (googleSyncEnabled && googleDriveReady) {
         const data = { animals, terrariums, equipments, foods, domotics, settings, version: "2.9.1" };
-        await saveToDrive(data);
+        const success = await saveToDrive(data);
+        if (success) setLastSync(new Date().toISOString());
       }
     };
     sync();
@@ -229,7 +231,8 @@ export function AppProvider({ children }) {
     importData,
     googleSyncEnabled,
     connectGoogleDrive,
-    googleDriveReady
+    googleDriveReady,
+    lastSync
   };
 
   return (
