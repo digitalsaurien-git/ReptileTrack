@@ -95,14 +95,21 @@ export function Login() {
           Google (si configuré)
         </button>
 
-        <div style={{ marginTop: '2rem' }}>
+        <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-light)' }}>
           <button 
             onClick={() => setIsGuest(true)}
-            className="btn" 
-            style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textDecoration: 'underline', background: 'transparent' }}
+            className="btn btn-primary" 
+            style={{ width: '100%', marginBottom: '1rem', background: 'rgba(78, 222, 163, 0.15)', color: 'var(--primary)', border: '1px solid var(--primary)' }}
           >
-            Utiliser sans compte (Mode Local)
+            Accès Direct (Mode Local)
           </button>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            L'accès local fonctionne sans compte et sans internet.
+          </p>
+        </div>
+
+        <div style={{ marginTop: '1.5rem', fontSize: '0.7rem', color: 'var(--text-muted)', background: 'rgba(0,0,0,0.1)', padding: '1rem', borderRadius: '8px' }}>
+          <strong>Besoin d'aide ?</strong> Si vous avez une erreur 404 après un mail, vérifiez que vous utilisez bien le tout dernier mail reçu.
         </div>
 
         <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '1.5rem' }}>
