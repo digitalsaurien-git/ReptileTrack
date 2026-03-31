@@ -125,6 +125,43 @@ export function AppProvider({ children }) {
     window.location.href = window.location.origin;
   };
 
+  const exportData = () => {
+    const data = {
+      animals,
+      terrariums,
+      equipments,
+      foods,
+      domotics,
+      settings,
+      exportDate: new Date().toISOString(),
+      version: "2.9.1"
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reptiletrack_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importData = (jsonData) => {
+    try {
+      const data = JSON.parse(jsonData);
+      if (data.animals) setAnimals(data.animals);
+      if (data.terrariums) setTerrariums(data.terrariums);
+      if (data.equipments) setEquipments(data.equipments);
+      if (data.foods) setFoods(data.foods);
+      if (data.domotics) setDomotics(data.domotics);
+      if (data.settings) setSettings(data.settings);
+      
+      alert("✅ Restauration réussie ! Vos données ont été mises à jour.");
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (e) {
+      alert("❌ Erreur lors de l'importation. Le fichier est peut-être corrompu.");
+    }
+  };
+
   const value = {
     user,
     setUser,
@@ -147,7 +184,8 @@ export function AppProvider({ children }) {
     signOut,
     loginWithGoogle,
     loginWithEmail,
-    logout
+    exportData,
+    importData
   };
 
   return (
