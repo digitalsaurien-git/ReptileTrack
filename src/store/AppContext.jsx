@@ -113,12 +113,16 @@ export function AppProvider({ children }) {
   }, [theme]);
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) console.error("Error signing out:", error);
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
     setUser(null);
-    setIsGuest(true);
+    setIsGuest(false);
     localStorage.removeItem('reptiltrack_is_guest');
-    window.location.href = '#/login'; // Utilise le hash si routing hash, ou juste /login
+    // On force le rechargement complet à la racine pour être sûr de retomber sur le Login
+    window.location.href = window.location.origin;
   };
 
   const value = {

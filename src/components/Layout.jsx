@@ -18,6 +18,8 @@ export function Layout() {
   const fileInputRef = useRef(null);
 
   const handleLogout = () => {
+    // Nettoyage radical immédiat
+    localStorage.removeItem('reptiltrack_is_guest');
     signOut();
   };
 

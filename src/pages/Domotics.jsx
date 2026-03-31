@@ -12,7 +12,9 @@ export function Domotics() {
     deviceId: "",
     ipAddress: "",
     room: "Salon",
-    terrariumIds: [] 
+    terrariumIds: [],
+    webhookOnUrl: "",
+    webhookOffUrl: ""
   });
 
   const deviceTypes = [
@@ -25,6 +27,7 @@ export function Domotics() {
     { id: 'switchbot', label: 'SwitchBot' },
     { id: 'tapo', label: 'Tapo (TP-Link)' },
     { id: 'shelly', label: 'Shelly' },
+    { id: 'ifttt', label: 'IFTTT / Webhook' },
   ];
 
   const handleAddDevice = (e) => {
@@ -38,13 +41,31 @@ export function Domotics() {
     };
     setDomotics([...domotics, device]);
     setShowAddModal(false);
-    setNewDevice({ name: "", type: "plug", provider: "switchbot", deviceId: "", ipAddress: "", room: "Salon", terrariumIds: [] });
+    setNewDevice({ 
+      name: "", type: "plug", provider: "switchbot", 
+      deviceId: "", ipAddress: "", room: "Salon", 
+      terrariumIds: [], webhookOnUrl: "", webhookOffUrl: "" 
+    });
   };
 
-  const togglePlug = (id) => {
+  const togglePlug = async (device) => {
+    const newStatus = device.status === 'on' ? 'off' : 'on';
+    
+    // Tentative d'appel du Webhook si configuré
+    const webhookUrl = newStatus === 'on' ? device.webhookOnUrl : device.webhookOffUrl;
+    if (webhookUrl) {
+      console.log(`📡 Envoi de la commande Webhook à: ${webhookUrl}`);
+      try {
+        // mode: 'no-cors' est souvent nécessaire pour les webhooks simples
+        fetch(webhookUrl, { mode: 'no-cors' }).catch(() => {});
+      } catch (e) {
+        console.error("Erreur Webhook:", e);
+      }
+    }
+
     setDomotics(domotics.map(d => {
-      if (d.id === id && d.type === 'plug') {
-        return { ...d, status: d.status === 'on' ? 'off' : 'on', lastUpdate: new Date().toISOString() };
+      if (d.id === device.id) {
+        return { ...d, status: newStatus, lastUpdate: new Date().toISOString() };
       }
       return d;
     }));
@@ -157,7 +178,7 @@ export function Domotics() {
                   </div>
                   {isPlug ? (
                     <button 
-                      onClick={() => togglePlug(device.id)}
+                      onClick={() => togglePlug(device)}
                       style={{
                         width: '50px',
                         height: '26px',
@@ -274,6 +295,34 @@ export function Domotics() {
                   placeholder={newDevice.type === 'camera' ? "ex: 192.168.1.50" : "ex: ABC-123-XYZ"} 
                 />
               </div>
+
+              {newDevice.type === 'plug' && (
+                <div style={{ background: 'rgba(78, 222, 163, 0.05)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid rgba(78, 222, 163, 0.1)' }}>
+                  <p style={{ fontSize: '0.75rem', marginTop: 0, fontWeight: 700, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Settings2 size={14} /> COMMANDE WEBHOOK (IFTTT / SHELLY)
+                  </p>
+                  <div className="form-group" style={{ marginBottom: '1rem' }}>
+                    <label style={{ fontSize: '0.7rem' }}>URL pour ALLUMER (ON)</label>
+                    <input 
+                      type="url" 
+                      value={newDevice.webhookOnUrl}
+                      onChange={e => setNewDevice({...newDevice, webhookOnUrl: e.target.value})}
+                      placeholder="https://maker.ifttt.com/trigger/mon_event/with/key/..." 
+                      style={{ fontSize: '0.8rem' }}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label style={{ fontSize: '0.7rem' }}>URL pour ÉTEINDRE (OFF)</label>
+                    <input 
+                      type="url" 
+                      value={newDevice.webhookOffUrl}
+                      onChange={e => setNewDevice({...newDevice, webhookOffUrl: e.target.value})}
+                      placeholder="https://maker.ifttt.com/trigger/mon_event/with/key/..." 
+                      style={{ fontSize: '0.8rem' }}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="form-group" style={{ marginBottom: '2rem' }}>
                 <label>Terrariums associés</label>
