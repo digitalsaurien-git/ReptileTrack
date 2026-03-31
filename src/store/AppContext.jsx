@@ -35,16 +35,25 @@ export function AppProvider({ children }) {
   }, []);
 
   const loginWithGoogle = async () => {
+    const redirectUrl = window.location.hostname === 'localhost' 
+      ? window.location.origin 
+      : 'https://repitle-track.vercel.app';
+    
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: 'https://reptil-track.vercel.app' }
+      options: { redirectTo: redirectUrl }
     });
   };
 
   const loginWithEmail = async (email) => {
+    // On privilégie l'URL de production exacte fournie par l'utilisateur
+    const redirectUrl = window.location.hostname === 'localhost' 
+      ? window.location.origin 
+      : 'https://repitle-track.vercel.app';
+    
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: 'https://reptil-track.vercel.app' }
+      options: { emailRedirectTo: redirectUrl }
     });
     return { error };
   };
