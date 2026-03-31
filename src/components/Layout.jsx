@@ -119,6 +119,35 @@ export function Layout() {
                   />
                 </div>
 
+                <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--primary)', marginBottom: '1rem' }}>SÉCURITÉ CLOUD (GOOGLE)</h4>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', lineHeight: '1.4' }}>
+                  {googleSyncEnabled 
+                    ? "✅ Synchronisation automatique activée sur votre Drive." 
+                    : "Connectez votre Drive pour sauvegarder automatiquement vos animaux sur votre nuage personnel."}
+                </p>
+                <button 
+                  onClick={connectGoogleDrive} 
+                  className="btn" 
+                  disabled={!googleDriveReady}
+                  style={{ 
+                    width: '100%', 
+                    padding: '0.6rem', 
+                    fontSize: '0.8rem', 
+                    background: googleSyncEnabled ? 'rgba(78, 222, 163, 0.1)' : 'white', 
+                    color: googleSyncEnabled ? 'var(--primary)' : 'black',
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    border: 'none',
+                    fontWeight: 'bold',
+                    opacity: googleDriveReady ? 1 : 0.5
+                  }}
+                >
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" width="18" alt="Google Drive" />
+                  {googleSyncEnabled ? "Drive Connecté" : "Connecter mon Drive"}
+                </button>
+
                 <hr style={{ border: 'none', borderTop: '1px solid var(--border-light)', margin: '1.5rem 0' }} />
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

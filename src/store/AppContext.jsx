@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { supabase } from "../supabase";
+import { initGoogleDrive, authenticateGoogle, saveToDrive } from "../utils/googleDrive";
 
 const AppContext = createContext();
 
@@ -15,6 +16,8 @@ export function AppProvider({ children }) {
   const [foods, setFoods] = useLocalStorage("reptiltrack_foods", []);
   const [domotics, setDomotics] = useLocalStorage("reptiltrack_domotics", []);
   const [settings, setSettings] = useLocalStorage("reptiltrack_settings", { kwhPrice: 0.25 });
+  const [googleSyncEnabled, setGoogleSyncEnabled] = useLocalStorage("reptiltrack_google_sync", false);
+  const [googleDriveReady, setGoogleDriveReady] = useState(false);
   const [theme, setTheme] = useLocalStorage("reptiltrack_theme", "dark");
 
   // --- AUTH LOGIC ---
@@ -112,6 +115,41 @@ export function AppProvider({ children }) {
     }
   }, [theme]);
 
+  // Initialisation Google Drive
+  useEffect(() => {
+    const init = async () => {
+      try {
+        await initGoogleDrive();
+        setGoogleDriveReady(true);
+      } catch (e) {
+        console.error("Gdrive Init Error", e);
+      }
+    };
+    init();
+  }, []);
+
+  // Auto-Sync vers Google Drive
+  useEffect(() => {
+    const sync = async () => {
+      if (googleSyncEnabled && googleDriveReady) {
+        const data = { animals, terrariums, equipments, foods, domotics, settings, version: "2.9.1" };
+        await saveToDrive(data);
+      }
+    };
+    sync();
+  }, [animals, terrariums, equipments, foods, domotics, googleSyncEnabled, googleDriveReady]);
+
+  const connectGoogleDrive = async () => {
+    try {
+      await authenticateGoogle();
+      setGoogleSyncEnabled(true);
+      localStorage.setItem('reptiltrack_google_sync', 'true');
+      alert("✅ ReptileTrack est maintenant synchronisé avec votre Google Drive !");
+    } catch (e) {
+      alert("❌ Échec de la connexion à Google Drive.");
+    }
+  };
+
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -162,6 +200,9 @@ export function AppProvider({ children }) {
     }
   };
 
+  // Fin de la logique Google Drive
+
+
   const value = {
     user,
     setUser,
@@ -185,7 +226,10 @@ export function AppProvider({ children }) {
     loginWithGoogle,
     loginWithEmail,
     exportData,
-    importData
+    importData,
+    googleSyncEnabled,
+    connectGoogleDrive,
+    googleDriveReady
   };
 
   return (
