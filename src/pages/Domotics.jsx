@@ -302,22 +302,28 @@ export function Domotics() {
                     <Settings2 size={14} /> COMMANDE WEBHOOK (IFTTT / SHELLY)
                   </p>
                   <div className="form-group" style={{ marginBottom: '1rem' }}>
-                    <label style={{ fontSize: '0.7rem' }}>URL pour ALLUMER (ON)</label>
+                    <label style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between' }}>
+                      URL pour ALLUMER (ON)
+                      <button type="button" onClick={() => fetch(newDevice.webhookOnUrl, {mode: 'no-cors'}).then(() => alert('📡 Signal envoyé !'))} style={{fontSize: '0.6rem', color: 'var(--primary)', background: 'transparent', border: 'none', cursor: 'pointer'}}>Tester</button>
+                    </label>
                     <input 
                       type="url" 
                       value={newDevice.webhookOnUrl}
                       onChange={e => setNewDevice({...newDevice, webhookOnUrl: e.target.value})}
-                      placeholder="https://maker.ifttt.com/trigger/mon_event/with/key/..." 
+                      placeholder="https://maker.ifttt.com/..." 
                       style={{ fontSize: '0.8rem' }}
                     />
                   </div>
                   <div className="form-group">
-                    <label style={{ fontSize: '0.7rem' }}>URL pour ÉTEINDRE (OFF)</label>
+                    <label style={{ fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between' }}>
+                      URL pour ÉTEINDRE (OFF)
+                      <button type="button" onClick={() => fetch(newDevice.webhookOffUrl, {mode: 'no-cors'}).then(() => alert('📡 Signal envoyé !'))} style={{fontSize: '0.6rem', color: 'var(--primary)', background: 'transparent', border: 'none', cursor: 'pointer'}}>Tester</button>
+                    </label>
                     <input 
                       type="url" 
                       value={newDevice.webhookOffUrl}
                       onChange={e => setNewDevice({...newDevice, webhookOffUrl: e.target.value})}
-                      placeholder="https://maker.ifttt.com/trigger/mon_event/with/key/..." 
+                      placeholder="https://maker.ifttt.com/..." 
                       style={{ fontSize: '0.8rem' }}
                     />
                   </div>

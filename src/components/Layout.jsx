@@ -48,6 +48,14 @@ export function Layout() {
     <div className="app-container">
       <header className="top-header no-print">
          <div style={{ position: 'relative' }}>
+            {isGuest && (
+              <div 
+                style={{ position: 'absolute', top: '-10px', right: '-10px', background: '#ff6b00', color: 'white', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', boxShadow: '0 0 10px rgba(255,107,0,0.5)', zIndex: 1 }}
+                title="Données non synchronisées sur le Cloud"
+              >
+                !
+              </div>
+            )}
             <button 
               className={`theme-btn ${showSettings ? 'active' : ''}`}
               onClick={() => setShowSettings(!showSettings)}
@@ -95,8 +103,9 @@ export function Layout() {
                   Vos données sont stockées localement sur ce navigateur. Pensez à exporter régulièrement une sauvegarde (fichier .json) et conservez-la précieusement !
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                  <button onClick={exportData} className="btn" style={{ padding: '0.5rem', fontSize: '0.8rem', background: 'rgba(78, 222, 163, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Download size={16} style={{ marginRight: '6px' }} /> Exporter
+                  <button onClick={exportData} className="btn" style={{ padding: '0.5rem', fontSize: '0.8rem', background: isGuest ? 'rgba(255, 107, 0, 0.15)' : 'rgba(78, 222, 163, 0.1)', color: isGuest ? '#ff6b00' : 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: isGuest ? '1.5px solid #ff6b00' : '1px solid var(--border-light)' }}>
+                    <Download size={16} style={{ marginRight: '6px' }} /> 
+                    {isGuest ? "SAUVEGARDE LANCEE" : "Exporter"}
                   </button>
                   <button onClick={() => fileInputRef.current.click()} className="btn" style={{ padding: '0.5rem', fontSize: '0.8rem', background: 'rgba(255, 180, 171, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Upload size={16} style={{ marginRight: '6px' }} /> Importer
