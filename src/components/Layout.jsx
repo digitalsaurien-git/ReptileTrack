@@ -166,7 +166,19 @@ export function Layout() {
 
                 {googleSyncEnabled && lastSync && (
                   <div style={{ fontSize: '0.65rem', color: 'var(--primary)', marginTop: '0.5rem', textAlign: 'center', opacity: 0.8 }}>
-                    Dernière sauvegarde : {typeof lastSync === 'string' ? new Date(lastSync).toLocaleTimeString() : 'En attente...'}
+                    ✅ Dernière sauvegarde : {typeof lastSync === 'string' ? new Date(lastSync).toLocaleTimeString() : 'En attente...'}
+                  </div>
+                )}
+
+                {!googleSyncEnabled && (
+                  <div style={{ fontSize: '0.65rem', color: 'var(--danger)', marginTop: '0.5rem', textAlign: 'center', opacity: 0.8 }}>
+                    ⚠️ Synchronisation Cloud inactive.
+                  </div>
+                )}
+
+                {!googleDriveReady && (
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.5rem', textAlign: 'center', opacity: 0.8 }}>
+                    ⏳ Chargement de l'API Google...
                   </div>
                 )}
 
