@@ -1043,7 +1043,7 @@ export function AnimalDetail() {
              <h3 style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.25rem' }}>
                <TrendingUp size={22} color="var(--primary)" /> Courbe de Croissance
              </h3>
-             <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: 'var(--radius-md)', height: '400px' }}>
+             <div style={{ background: 'rgba(0,0,0,0.1)', padding: '1.5rem', borderRadius: 'var(--radius-md)', height: '400px', border: '1px solid var(--border-light)' }}>
                {(() => {
                  const weightData = (animal.history || [])
                    .filter(h => h.type === 'pesée' && h.weight)
@@ -1062,13 +1062,14 @@ export function AnimalDetail() {
                    datasets: [{
                      label: 'Poids (g)',
                      data: weightData.map(h => h.weightUnit === 'kg' ? h.weight * 1000 : h.weight),
-                     borderColor: '#4edea3',
-                     backgroundColor: 'rgba(78, 222, 163, 0.1)',
+                     borderColor: '#00ffa3', 
+                     backgroundColor: 'rgba(0, 255, 163, 0.1)',
                      fill: true,
                      tension: 0.4,
                      pointRadius: 6,
                      pointHoverRadius: 8,
-                     pointBackgroundColor: '#4edea3'
+                     pointBackgroundColor: '#00ffa3',
+                     borderWidth: 3
                    }]
                  };
 
@@ -1080,20 +1081,26 @@ export function AnimalDetail() {
                      tooltip: {
                        backgroundColor: '#1a1f26',
                        titleColor: '#fff',
-                       bodyColor: '#4edea3',
-                       borderColor: 'rgba(255,255,255,0.1)',
+                       bodyColor: '#00ffa3',
+                       borderColor: 'rgba(255,255,255,0.2)',
                        borderWidth: 1,
                        padding: 12
                      }
                    },
                    scales: {
                      y: {
-                       grid: { color: 'rgba(255,255,255,0.05)' },
-                       ticks: { color: 'var(--text-muted)' }
+                       grid: { color: 'rgba(128,128,128,0.1)' },
+                       ticks: { 
+                         color: '#888',
+                         font: { weight: '600' }
+                       }
                      },
                      x: {
                        grid: { display: false },
-                       ticks: { color: 'var(--text-muted)' }
+                       ticks: { 
+                         color: '#888',
+                         font: { weight: '600' }
+                       }
                      }
                    }
                  };
