@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { LayoutDashboard, Home, Plug, Settings, Sun, Moon, Euro, X, Check, Drumstick, Download, Upload, LogOut, Smartphone } from "lucide-react";
 import { Snake } from "./icons/Snake";
 import { useAppContext } from "../store/AppContext";
+import { saveToDrive } from "../utils/googleDrive";
 import "./Layout.css";
 
 export function Layout() {
@@ -125,7 +126,8 @@ export function Layout() {
                   />
                 </div>
 
-                <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--primary)', marginBottom: '1rem' }}>SÉCURITÉ CLOUD (GOOGLE)</h4>
+                <div style={{ paddingBottom: '3rem' }}></div>
+                <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--primary)', marginBottom: '1rem' }}>SÉCURITÉ CLOUD (DRIVE)</h4>
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', lineHeight: '1.4' }}>
                   {googleSyncEnabled 
                     ? "✅ Synchronisation automatique activée sur votre Drive." 
