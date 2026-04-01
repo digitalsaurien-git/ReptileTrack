@@ -4,10 +4,33 @@ import { useAppContext } from '../store/AppContext';
 import { 
   ChevronLeft, Save, Plus, Trash2, Camera, MapPin, 
   Bone, Activity, FileText, Info, Calendar, ClipboardList,
-  Scale, Shield, Truck, Printer, Euro, Zap, Send, Edit2
+  Scale, Shield, Truck, Printer, Euro, Zap, Send, Edit2, TrendingUp
 } from 'lucide-react';
 import { speciesList } from '../data/species';
 import { getPlaceholderImage } from '../utils/imageUtils';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 export function AnimalDetail() {
   const { id } = useParams();
@@ -16,7 +39,15 @@ export function AnimalDetail() {
   
   const [animal, setAnimal] = useState(null);
   const [activeTab, setActiveTab] = useState('infos');
-  const [newEvent, setNewEvent] = useState({ type: 'repas', date: new Date().toISOString().split('T')[0], notes: '', foodId: '', quantity: 1 });
+  const [newEvent, setNewEvent] = useState({ 
+    type: 'repas', 
+    date: new Date().toISOString().split('T')[0], 
+    notes: '', 
+    foodId: '', 
+    quantity: 1, 
+    weight: '', 
+    weightUnit: 'g' 
+  });
   const [newDoc, setNewDoc] = useState({ name: '', type: 'facture', date: new Date().toISOString().split('T')[0], ref: '' });
 
   const [isSending, setIsSending] = useState(false);
@@ -95,7 +126,15 @@ export function AnimalDetail() {
       ...animal,
       history: [historyEvent, ...(animal.history || [])]
     });
-    setNewEvent({ type: 'repas', date: new Date().toISOString().split('T')[0], notes: '', foodId: '', quantity: 1 });
+    setNewEvent({ 
+      type: 'repas', 
+      date: new Date().toISOString().split('T')[0], 
+      notes: '', 
+      foodId: '', 
+      quantity: 1, 
+      weight: '', 
+      weightUnit: 'g' 
+    });
   };
 
   const handleAddDoc = (e) => {
@@ -300,6 +339,7 @@ export function AnimalDetail() {
           { id: 'legal', label: 'Réglementaire', icon: <Shield size={18} /> },
           { id: 'entry', label: 'Entrée', icon: <Truck size={18} /> },
           { id: 'history', label: 'Journal', icon: <Activity size={18} /> },
+          { id: 'analytics', label: 'Analyses', icon: <TrendingUp size={18} /> },
           { id: 'docs', label: 'Documents', icon: <FileText size={18} /> }
         ].map(tab => (
           <button 
@@ -744,6 +784,29 @@ export function AnimalDetail() {
                 </div>
               )}
 
+              {newEvent.type === 'pesée' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: 'rgba(255, 185, 0, 0.05)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255, 185, 0, 0.2)' }}>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: '#ffb900' }}>Poids ({newEvent.weightUnit})</label>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      required
+                      placeholder="Ex: 45.5"
+                      value={newEvent.weight} 
+                      onChange={e => setNewEvent({...newEvent, weight: parseFloat(e.target.value) || '' })} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: '#ffb900' }}>Unité</label>
+                    <select value={newEvent.weightUnit} onChange={e => setNewEvent({...newEvent, weightUnit: e.target.value})}>
+                      <option value="g">Grammes (g)</option>
+                      <option value="kg">Kilogrammes (kg)</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label>Date de l'évènement</label>
                 <input type="date" value={newEvent.date} onChange={e => setNewEvent({...newEvent, date: e.target.value})} />
@@ -822,6 +885,12 @@ export function AnimalDetail() {
                       {item.type === 'repas' && item.foodName && (
                         <div style={{ marginBottom: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', borderLeft: '2px solid var(--primary)', fontSize: '0.85rem' }}>
                           🍗 <strong>Nourriture:</strong> {item.quantity}x {item.foodName}
+                        </div>
+                      )}
+
+                      {item.type === 'pesée' && item.weight && (
+                        <div style={{ marginBottom: '0.5rem', background: 'rgba(255,185,0,0.1)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', borderLeft: '2px solid #ffb900', fontSize: '0.9rem', fontWeight: 700 }}>
+                          ⚖️ Poids: {item.weight} {item.weightUnit || 'g'}
                         </div>
                       )}
 
@@ -967,6 +1036,159 @@ export function AnimalDetail() {
            </div>
         </div>
       )}
+
+       {activeTab === 'analytics' && (
+         <div className="no-print animate-fade-in" style={{ display: 'grid', gap: '2rem' }}>
+           <div className="glass-panel" style={{ padding: '2.5rem' }}>
+             <h3 style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.25rem' }}>
+               <TrendingUp size={22} color="var(--primary)" /> Courbe de Croissance
+             </h3>
+             <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: 'var(--radius-md)', height: '400px' }}>
+               {(() => {
+                 const weightData = (animal.history || [])
+                   .filter(h => h.type === 'pesée' && h.weight)
+                   .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                 if (weightData.length < 2) {
+                   return (
+                     <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                       Il faut au moins 2 pesées pour générer un graphique.
+                     </div>
+                   );
+                 }
+
+                 const data = {
+                   labels: weightData.map(h => new Date(h.date).toLocaleDateString()),
+                   datasets: [{
+                     label: 'Poids (g)',
+                     data: weightData.map(h => h.weightUnit === 'kg' ? h.weight * 1000 : h.weight),
+                     borderColor: '#4edea3',
+                     backgroundColor: 'rgba(78, 222, 163, 0.1)',
+                     fill: true,
+                     tension: 0.4,
+                     pointRadius: 6,
+                     pointHoverRadius: 8,
+                     pointBackgroundColor: '#4edea3'
+                   }]
+                 };
+
+                 const options = {
+                   responsive: true,
+                   maintainAspectRatio: false,
+                   plugins: {
+                     legend: { display: false },
+                     tooltip: {
+                       backgroundColor: '#1a1f26',
+                       titleColor: '#fff',
+                       bodyColor: '#4edea3',
+                       borderColor: 'rgba(255,255,255,0.1)',
+                       borderWidth: 1,
+                       padding: 12
+                     }
+                   },
+                   scales: {
+                     y: {
+                       grid: { color: 'rgba(255,255,255,0.05)' },
+                       ticks: { color: 'var(--text-muted)' }
+                     },
+                     x: {
+                       grid: { display: false },
+                       ticks: { color: 'var(--text-muted)' }
+                     }
+                   }
+                 };
+
+                 return <Line data={data} options={options} />;
+               })()}
+             </div>
+           </div>
+
+           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+             <div className="glass-panel" style={{ padding: '2rem' }}>
+               <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.1rem' }}>
+                 <Calendar size={20} color="var(--primary)" /> Fréquence des Mues
+               </h3>
+               {(() => {
+                 const mues = (animal.history || [])
+                   .filter(h => h.type === 'mue')
+                   .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                 const currentYear = new Date().getFullYear();
+                 const muesThisYear = mues.filter(m => new Date(m.date).getFullYear() === currentYear);
+
+                 return (
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                     <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+                       <div>
+                         <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--primary)' }}>{muesThisYear.length}</div>
+                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Mues en {currentYear}</div>
+                       </div>
+                       <div>
+                         <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--secondary)' }}>{mues.length}</div>
+                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Mues totales</div>
+                       </div>
+                     </div>
+                     
+                     <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1rem' }}>
+                       <h4 style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Dernières occurrences :</h4>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                         {mues.slice(0, 5).map(m => (
+                           <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '0.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '4px' }}>
+                             <span>🐍 Mue enregistrée</span>
+                             <span style={{ color: 'var(--primary)' }}>{new Date(m.date).toLocaleDateString()}</span>
+                           </div>
+                         ))}
+                       </div>
+                     </div>
+                   </div>
+                 );
+               })()}
+             </div>
+
+             <div className="glass-panel" style={{ padding: '2rem' }}>
+               <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.1rem' }}>
+                 <Scale size={20} color="var(--primary)" /> Stats Morphologiques
+               </h3>
+               {(() => {
+                 const pesées = (animal.history || [])
+                   .filter(h => h.type === 'pesée' && h.weight)
+                   .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                 if (pesées.length === 0) return <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>Aucune donnée de poids.</p>;
+
+                 const current = pesées[0];
+                 const previous = pesées[1];
+                 const weightInG = current.weightUnit === 'kg' ? current.weight * 1000 : current.weight;
+                 const prevWeightInG = previous ? (previous.weightUnit === 'kg' ? previous.weight * 1000 : previous.weight) : null;
+                 const diff = prevWeightInG ? (weightInG - prevWeightInG) : 0;
+
+                 return (
+                   <div style={{ textAlign: 'center' }}>
+                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Poids Actuel</div>
+                     <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#fff' }}>{weightInG} <span style={{ fontSize: '1rem', color: 'var(--primary)' }}>g</span></div>
+                     
+                     {prevWeightInG && (
+                       <div style={{ 
+                         marginTop: '1rem', 
+                         display: 'inline-flex', 
+                         alignItems: 'center', 
+                         gap: '0.5rem', 
+                         padding: '0.5rem 1rem', 
+                         borderRadius: 'var(--radius-full)',
+                         background: diff >= 0 ? 'rgba(78,222,163,0.1)' : 'rgba(255,82,82,0.1)',
+                         color: diff >= 0 ? 'var(--secondary)' : '#ff5252',
+                         fontWeight: 700
+                       }}>
+                         {diff >= 0 ? '+' : ''}{diff} g depuis la dernière pesée
+                       </div>
+                     )}
+                   </div>
+                 );
+               })()}
+             </div>
+           </div>
+         </div>
+       )}
 
       {/* ZONE D'IMPRESSION (Formulaire Officiel) */}
       <div className="print-only">
