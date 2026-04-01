@@ -135,15 +135,24 @@ export function Layout() {
                 </p>
                 <button 
                   onClick={async () => {
-                    if (googleSyncEnabled) {
-                      setIsSyncing(true);
-                      const data = { animals, terrariums, equipments, foods, domotics, settings, version: "2.9.1" };
-                      const success = await saveToDrive(data);
-                      setIsSyncing(false);
-                      if (success) alert("✅ Sauvegarde immédiate réussie !");
-                    } else {
-                      connectGoogleDrive();
+                    setIsSyncing(true);
+                    const data = { animals, terrariums, equipments, foods, domotics, settings, version: "2.9.1" };
+                    console.log("📡 Tentative de sauvegarde...");
+                    let success = await saveToDrive(data);
+                    
+                    if (!success) {
+                      console.log("🔑 Échec détecté, tentative de reconnexion...");
+                      try {
+                        await connectGoogleDrive();
+                        // On réessaie une fois après la connexion
+                        success = await saveToDrive(data);
+                      } catch (e) {
+                         console.error("Impossible de reconnecter:", e);
+                      }
                     }
+
+                    setIsSyncing(false);
+                    if (success) alert("✅ Sauvegarde immédiate réussie !");
                   }} 
                   className="btn" 
                   disabled={!googleDriveReady || isSyncing}
