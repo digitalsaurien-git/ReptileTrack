@@ -86,13 +86,13 @@ export async function saveToDrive(data) {
     // 1. Get or create the path
     const digitalSaurienId = await getOrCreateFolder('DigitalSaurien');
     const cheptelId = await getOrCreateFolder('Cheptel', digitalSaurienId);
-    const reptilTrackId = await getOrCreateFolder('ReptilTrack', cheptelId);
+    const reptileTrackId = await getOrCreateFolder('ReptileTrack', cheptelId);
 
     const fileName = 'reptiletrack_sync_backup.json';
     
     // 2. Search for existing file in the final folder
     const response = await window.gapi.client.drive.files.list({
-      q: `name = '${fileName}' and '${reptilTrackId}' in parents and trashed = false`,
+      q: `name = '${fileName}' and '${reptileTrackId}' in parents and trashed = false`,
       fields: 'files(id, name)',
     });
     
@@ -104,7 +104,7 @@ export async function saveToDrive(data) {
     const metadata = {
       'name': fileName,
       'mimeType': 'application/json',
-      'parents': [reptilTrackId]
+      'parents': [reptileTrackId]
     };
 
     const multipartRequestBody =
@@ -149,10 +149,10 @@ export async function loadFromDrive() {
   try {
     const digitalSaurienId = await getOrCreateFolder('DigitalSaurien');
     const cheptelId = await getOrCreateFolder('Cheptel', digitalSaurienId);
-    const reptilTrackId = await getOrCreateFolder('ReptilTrack', cheptelId);
+    const reptileTrackId = await getOrCreateFolder('ReptileTrack', cheptelId);
 
     const response = await window.gapi.client.drive.files.list({
-      q: `name = 'reptiletrack_sync_backup.json' and '${reptilTrackId}' in parents and trashed = false`,
+      q: `name = 'reptiletrack_sync_backup.json' and '${reptileTrackId}' in parents and trashed = false`,
       fields: 'files(id, name)',
     });
     
