@@ -197,13 +197,24 @@ export function Layout() {
                   onClick={async () => {
                     if (!confirm("⚠️ Attention : Cela écrasera vos données locales par celles du Cloud. Continuer ?")) return;
                     setIsSyncing(true);
-                    const driveData = await loadFromDrive();
+                    let driveData = await loadFromDrive();
+
+                    if (!driveData) {
+                      console.log("🔑 Badge manquant, tentative de reconnexion pour récupération...");
+                      try {
+                        await connectGoogleDrive();
+                        driveData = await loadFromDrive();
+                      } catch (e) {
+                         console.error("Impossible de reconnecter:", e);
+                      }
+                    }
+
                     setIsSyncing(false);
                     if (driveData && driveData.animals) {
                       importData(JSON.stringify(driveData));
                       alert("✅ Restauration réussie !");
                     } else {
-                      alert("❌ Aucune sauvegarde valide trouvée sur le Drive.");
+                      alert("❌ Aucune sauvegarde valide trouvée (ou connexion annulée).");
                     }
                   }} 
                   className="btn" 
