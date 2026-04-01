@@ -250,7 +250,8 @@ export function AppProvider({ children }) {
     googleSyncEnabled,
     connectGoogleDrive,
     googleDriveReady,
-    lastSync
+    lastSync,
+    setLastSync
   };
 
   return (

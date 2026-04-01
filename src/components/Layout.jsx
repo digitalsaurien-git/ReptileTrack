@@ -10,7 +10,7 @@ export function Layout() {
   const { 
     theme, toggleTheme, signOut, user, isGuest, setIsGuest, 
     exportData, importData, googleSyncEnabled, connectGoogleDrive, 
-    googleDriveReady, lastSync,
+    googleDriveReady, lastSync, setLastSync,
     animals, terrariums, equipments, foods, domotics, settings
   } = useAppContext();
   const [showSettings, setShowSettings] = useState(false);
@@ -152,7 +152,10 @@ export function Layout() {
                     }
 
                     setIsSyncing(false);
-                    if (success) alert("✅ Sauvegarde immédiate réussie !");
+                    if (success) {
+                      setLastSync(new Date().toISOString());
+                      alert("✅ Sauvegarde immédiate réussie !");
+                    }
                   }} 
                   className="btn" 
                   disabled={!googleDriveReady || isSyncing}
