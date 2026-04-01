@@ -6,8 +6,14 @@ import { useAppContext } from "../store/AppContext";
 import "./Layout.css";
 
 export function Layout() {
-  const { theme, toggleTheme, signOut, user, isGuest, setIsGuest, exportData, importData, googleSyncEnabled, connectGoogleDrive, googleDriveReady, lastSync } = useAppContext();
+  const { 
+    theme, toggleTheme, signOut, user, isGuest, setIsGuest, 
+    exportData, importData, googleSyncEnabled, connectGoogleDrive, 
+    googleDriveReady, lastSync,
+    animals, terrariums, equipments, foods, domotics, settings
+  } = useAppContext();
   const [showSettings, setShowSettings] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState(localStorage.getItem('reptiltrack_webhook_url') || '');
 
   const saveWebhook = () => {
@@ -128,15 +134,17 @@ export function Layout() {
                 <button 
                   onClick={async () => {
                     if (googleSyncEnabled) {
+                      setIsSyncing(true);
                       const data = { animals, terrariums, equipments, foods, domotics, settings, version: "2.9.1" };
                       const success = await saveToDrive(data);
+                      setIsSyncing(false);
                       if (success) alert("✅ Sauvegarde immédiate réussie !");
                     } else {
                       connectGoogleDrive();
                     }
                   }} 
                   className="btn" 
-                  disabled={!googleDriveReady}
+                  disabled={!googleDriveReady || isSyncing}
                   style={{ 
                     width: '100%', 
                     padding: '0.6rem', 
@@ -149,11 +157,11 @@ export function Layout() {
                     gap: '0.5rem',
                     border: 'none',
                     fontWeight: 'bold',
-                    opacity: googleDriveReady ? 1 : 0.5
+                    opacity: (googleDriveReady && !isSyncing) ? 1 : 0.5
                   }}
                 >
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" width="18" alt="Google Drive" />
-                  {googleSyncEnabled ? "Synchroniser Maintenant" : "Connecter mon Drive"}
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" width="18" alt="Google Drive" className={isSyncing ? "rotating" : ""} />
+                  {isSyncing ? "Synchronisation..." : (googleSyncEnabled ? "Synchroniser Maintenant" : "Connecter mon Drive")}
                 </button>
 
                 {googleSyncEnabled && lastSync && (
