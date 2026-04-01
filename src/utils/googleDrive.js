@@ -9,18 +9,40 @@ let tokenClient;
 let gapiInited = false;
 let ghisInited = false;
 
+// Helper to wait for global scripts to load
+function waitForScripts() {
+  return new Promise((resolve) => {
+    const check = () => {
+      if (window.gapi && window.google) {
+        resolve();
+      } else {
+        setTimeout(check, 500);
+      }
+    };
+    check();
+  });
+}
+
 // Initialize the GAPI and GIS libraries
 export async function initGoogleDrive() {
   if (!CLIENT_ID) return;
   
+  await waitForScripts();
+  console.log("🛠️ Script Google détectés, initialisation...");
+
   return new Promise((resolve) => {
     window.gapi.load('client', async () => {
-      await window.gapi.client.init({
-        clientId: CLIENT_ID,
-        discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
-      });
-      gapiInited = true;
-      checkInitialization(resolve);
+      try {
+        await window.gapi.client.init({
+          clientId: CLIENT_ID,
+          discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
+        });
+        gapiInited = true;
+        console.log("✅ GAPI Initialisé");
+        checkInitialization(resolve);
+      } catch (err) {
+        console.error("❌ GAPI Init Error:", err);
+      }
     });
 
     tokenClient = window.google.accounts.oauth2.initTokenClient({
@@ -29,6 +51,7 @@ export async function initGoogleDrive() {
       callback: '', // defined later for auth
     });
     ghisInited = true;
+    console.log("✅ GIS Initialisé");
     checkInitialization(resolve);
   });
 }
