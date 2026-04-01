@@ -158,12 +158,15 @@ export function AppProvider({ children }) {
 
   const connectGoogleDrive = async () => {
     try {
+      console.log("🚀 Tentative de connexion Google Drive...");
       await authenticateGoogle();
+      console.log("✅ Authentification réussie !");
       setGoogleSyncEnabled(true);
       localStorage.setItem('reptiltrack_google_sync', 'true');
       alert("✅ ReptileTrack est maintenant synchronisé avec votre Google Drive !");
     } catch (e) {
-      alert("❌ Échec de la connexion à Google Drive.");
+      console.error("❌ Échec d'authentification :", e);
+      alert("❌ Échec de la connexion à Google Drive. Vérifiez que vous avez bien autorisé l'app dans la fenêtre Google.");
     }
   };
 

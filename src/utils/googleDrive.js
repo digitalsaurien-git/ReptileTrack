@@ -80,13 +80,15 @@ async function getOrCreateFolder(name, parentId = 'root') {
   }
 }
 
-// Save Data to a specific path: DigitalSaurien/Cheptel/ReptilTrack
+// Save Data to a specific path: DigitalSaurien/Cheptel/ReptileTrack
 export async function saveToDrive(data) {
+  console.log("💾 [Drive] Début de la sauvegarde...");
   try {
     // 1. Get or create the path
     const digitalSaurienId = await getOrCreateFolder('DigitalSaurien');
     const cheptelId = await getOrCreateFolder('Cheptel', digitalSaurienId);
     const reptileTrackId = await getOrCreateFolder('ReptileTrack', cheptelId);
+    console.log("📂 [Drive] Dossier cible trouvé/créé, ID:", reptileTrackId);
 
     const fileName = 'reptiletrack_sync_backup.json';
     
@@ -117,6 +119,7 @@ export async function saveToDrive(data) {
         close_delim;
 
     if (file) {
+      console.log("📝 [Drive] Mise à jour du fichier existant (ID:", file.id, ")...");
       await window.gapi.client.request({
         'path': '/upload/drive/v3/files/' + file.id,
         'method': 'PATCH',
@@ -126,7 +129,9 @@ export async function saveToDrive(data) {
         },
         'body': multipartRequestBody
       });
+      console.log("✅ [Drive] Mise à jour réussie !");
     } else {
+      console.log("🆕 [Drive] Création d'un nouveau fichier de sauvegarde...");
       await window.gapi.client.request({
         'path': '/upload/drive/v3/files',
         'method': 'POST',
@@ -136,10 +141,11 @@ export async function saveToDrive(data) {
         },
         'body': multipartRequestBody
       });
+      console.log("✅ [Drive] Création réussie !");
     }
     return true;
   } catch (err) {
-    console.error('Drive Save Error:', err);
+    console.error('❌ [Drive] Erreur lors de la sauvegarde:', err);
     return false;
   }
 }
