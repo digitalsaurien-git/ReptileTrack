@@ -122,8 +122,23 @@ export function AppProvider({ children }) {
       try {
         await initGoogleDrive();
         setGoogleDriveReady(true);
+        
+        // Si la sync est activée, on essaie de charger les données
+        if (localStorage.getItem('reptiltrack_google_sync') === 'true') {
+          const driveData = await loadFromDrive();
+          if (driveData && confirm("✨ Une sauvegarde plus récente a été trouvée sur votre Google Drive. Voulez-vous la charger ?")) {
+            if (driveData.animals) setAnimals(driveData.animals);
+            if (driveData.terrariums) setTerrariums(driveData.terrariums);
+            if (driveData.equipments) setEquipments(driveData.equipments);
+            if (driveData.foods) setFoods(driveData.foods);
+            if (driveData.domotics) setDomotics(driveData.domotics);
+            if (driveData.settings) setSettings(driveData.settings);
+            setLastSync(new Date().toISOString());
+          }
+        }
       } catch (e) {
         console.error("Gdrive Init Error", e);
+        setGoogleDriveReady(false);
       }
     };
     init();

@@ -126,7 +126,15 @@ export function Layout() {
                     : "Connectez votre Drive pour sauvegarder automatiquement vos animaux sur votre nuage personnel."}
                 </p>
                 <button 
-                  onClick={connectGoogleDrive} 
+                  onClick={async () => {
+                    if (googleSyncEnabled) {
+                      const data = { animals, terrariums, equipments, foods, domotics, settings, version: "2.9.1" };
+                      const success = await saveToDrive(data);
+                      if (success) alert("✅ Sauvegarde immédiate réussie !");
+                    } else {
+                      connectGoogleDrive();
+                    }
+                  }} 
                   className="btn" 
                   disabled={!googleDriveReady}
                   style={{ 
@@ -145,7 +153,7 @@ export function Layout() {
                   }}
                 >
                   <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" width="18" alt="Google Drive" />
-                  {googleSyncEnabled ? "Drive Connecté" : "Connecter mon Drive"}
+                  {googleSyncEnabled ? "Synchroniser Maintenant" : "Connecter mon Drive"}
                 </button>
 
                 {googleSyncEnabled && lastSync && (
