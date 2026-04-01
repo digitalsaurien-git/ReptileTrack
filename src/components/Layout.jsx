@@ -133,7 +133,8 @@ export function Layout() {
                     ? "✅ Synchronisation automatique activée sur votre Drive." 
                     : "Connectez votre Drive pour sauvegarder automatiquement vos animaux sur votre nuage personnel."}
                 </p>
-                <button 
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button 
                   onClick={async () => {
                     setIsSyncing(true);
                     const data = { animals, terrariums, equipments, foods, domotics, settings, version: "2.9.1" };
@@ -144,7 +145,6 @@ export function Layout() {
                       console.log("🔑 Échec détecté, tentative de reconnexion...");
                       try {
                         await connectGoogleDrive();
-                        // On réessaie une fois après la connexion
                         success = await saveToDrive(data);
                       } catch (e) {
                          console.error("Impossible de reconnecter:", e);
@@ -160,7 +160,7 @@ export function Layout() {
                   className="btn" 
                   disabled={!googleDriveReady || isSyncing}
                   style={{ 
-                    width: '100%', 
+                    flex: 1,
                     padding: '0.6rem', 
                     fontSize: '0.8rem', 
                     background: googleSyncEnabled ? 'rgba(78, 222, 163, 0.1)' : 'white', 
@@ -168,15 +168,50 @@ export function Layout() {
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center',
-                    gap: '0.5rem',
+                    gap: '0.4rem',
                     border: 'none',
                     fontWeight: 'bold',
                     opacity: (googleDriveReady && !isSyncing) ? 1 : 0.5
                   }}
                 >
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" width="18" alt="Google Drive" className={isSyncing ? "rotating" : ""} />
-                  {isSyncing ? "Synchronisation..." : (googleSyncEnabled ? "Synchroniser Maintenant" : "Connecter mon Drive")}
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" width="16" alt="Google Drive" className={isSyncing ? "rotating" : ""} />
+                  {isSyncing ? "..." : "Sauver"}
                 </button>
+
+                <button 
+                  onClick={async () => {
+                    if (!confirm("⚠️ Attention : Cela écrasera vos données locales par celles du Cloud. Continuer ?")) return;
+                    setIsSyncing(true);
+                    const driveData = await loadFromDrive();
+                    setIsSyncing(false);
+                    if (driveData && driveData.animals) {
+                      importData(JSON.stringify(driveData));
+                      alert("✅ Restauration réussie !");
+                    } else {
+                      alert("❌ Aucune sauvegarde valide trouvée sur le Drive.");
+                    }
+                  }} 
+                  className="btn" 
+                  disabled={!googleDriveReady || isSyncing}
+                  style={{ 
+                    flex: 1,
+                    padding: '0.6rem', 
+                    fontSize: '0.8rem', 
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    color: 'white',
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    gap: '0.4rem',
+                    border: '1px solid var(--border-light)',
+                    fontWeight: 'bold',
+                    opacity: (googleDriveReady && !isSyncing) ? 1 : 0.5
+                  }}
+                >
+                  <Download size={16} />
+                  Récupérer
+                </button>
+              </div>
 
                 {googleSyncEnabled && lastSync && (
                   <div style={{ fontSize: '0.65rem', color: 'var(--primary)', marginTop: '0.5rem', textAlign: 'center', opacity: 0.8 }}>
