@@ -105,6 +105,10 @@ async function getOrCreateFolder(name, parentId = 'root') {
 
 // Save Data to a specific path: DigitalSaurien/Cheptel/ReptileTrack
 export async function saveToDrive(data) {
+  // Check if we have a token first
+  if (!window.gapi.client.getToken()) {
+    return false;
+  }
   console.log("💾 [Drive] Début de la sauvegarde...");
   try {
     // 1. Get or create the path
@@ -143,6 +147,22 @@ export async function saveToDrive(data) {
 
     if (file) {
       console.log("📝 [Drive] Mise à jour du fichier existant (ID:", file.id, ")...");
+      
+      // For PATCH, we only need the metadata we want to change or nothing if just updating content
+      const patchMetadata = {
+        'name': fileName,
+        'mimeType': 'application/json'
+      };
+
+      const patchRequestBody =
+        delimiter +
+        'Content-Type: application/json\r\n\r\n' +
+        JSON.stringify(patchMetadata) +
+        delimiter +
+        'Content-Type: application/json\r\n\r\n' +
+        JSON.stringify(data) +
+        close_delim;
+
       await window.gapi.client.request({
         'path': '/upload/drive/v3/files/' + file.id,
         'method': 'PATCH',
@@ -150,11 +170,26 @@ export async function saveToDrive(data) {
         'headers': {
           'Content-Type': 'multipart/related; boundary=' + boundary
         },
-        'body': multipartRequestBody
+        'body': patchRequestBody
       });
       console.log("✅ [Drive] Mise à jour réussie !");
     } else {
       console.log("🆕 [Drive] Création d'un nouveau fichier de sauvegarde...");
+      const createMetadata = {
+        'name': fileName,
+        'mimeType': 'application/json',
+        'parents': [reptileTrackId]
+      };
+
+      const createRequestBody =
+        delimiter +
+        'Content-Type: application/json\r\n\r\n' +
+        JSON.stringify(createMetadata) +
+        delimiter +
+        'Content-Type: application/json\r\n\r\n' +
+        JSON.stringify(data) +
+        close_delim;
+
       await window.gapi.client.request({
         'path': '/upload/drive/v3/files',
         'method': 'POST',
@@ -162,7 +197,7 @@ export async function saveToDrive(data) {
         'headers': {
           'Content-Type': 'multipart/related; boundary=' + boundary
         },
-        'body': multipartRequestBody
+        'body': createRequestBody
       });
       console.log("✅ [Drive] Création réussie !");
     }
@@ -176,6 +211,12 @@ export async function saveToDrive(data) {
 // Load Data from the specific path
 export async function loadFromDrive() {
   try {
+    // Check if we have a token first
+    if (!window.gapi.client.getToken()) {
+      console.log("ℹ️ [Drive] Aucun jeton d'accès détecté, attente d'une action manuelle.");
+      return null;
+    }
+
     const digitalSaurienId = await getOrCreateFolder('DigitalSaurien');
     const cheptelId = await getOrCreateFolder('Cheptel', digitalSaurienId);
     const reptileTrackId = await getOrCreateFolder('ReptileTrack', cheptelId);
