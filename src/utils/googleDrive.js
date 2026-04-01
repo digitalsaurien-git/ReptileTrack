@@ -3,7 +3,7 @@
  */
 
 const CLIENT_ID = "665050976672-p2bt775dvacagthl9bga6ohspc3v8n0g.apps.googleusercontent.com";
-const SCOPES = 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
 let tokenClient;
 let gapiInited = false;
@@ -57,15 +57,42 @@ export async function authenticateGoogle() {
   });
 }
 
-// Save Data to Google Drive (Hidden App Data folder)
+// Helper to find or create a folder by name and parent
+async function getOrCreateFolder(name, parentId = 'root') {
+  const query = `name = '${name}' and mimeType = 'application/vnd.google-apps.folder' and '${parentId}' in parents and trashed = false`;
+  const response = await window.gapi.client.drive.files.list({
+    q: query,
+    fields: 'files(id, name)',
+  });
+  
+  if (response.result.files.length > 0) {
+    return response.result.files[0].id;
+  } else {
+    const createResponse = await window.gapi.client.drive.files.create({
+      resource: {
+        name: name,
+        mimeType: 'application/vnd.google-apps.folder',
+        parents: [parentId]
+      },
+      fields: 'id'
+    });
+    return createResponse.result.id;
+  }
+}
+
+// Save Data to a specific path: DigitalSaurien/Cheptel/ReptilTrack
 export async function saveToDrive(data) {
   try {
+    // 1. Get or create the path
+    const digitalSaurienId = await getOrCreateFolder('DigitalSaurien');
+    const cheptelId = await getOrCreateFolder('Cheptel', digitalSaurienId);
+    const reptilTrackId = await getOrCreateFolder('ReptilTrack', cheptelId);
+
     const fileName = 'reptiletrack_sync_backup.json';
     
-    // 1. Search for existing file
+    // 2. Search for existing file in the final folder
     const response = await window.gapi.client.drive.files.list({
-      q: `name = '${fileName}' and 'appDataFolder' in parents`,
-      spaces: 'appDataFolder',
+      q: `name = '${fileName}' and '${reptilTrackId}' in parents and trashed = false`,
       fields: 'files(id, name)',
     });
     
@@ -77,7 +104,7 @@ export async function saveToDrive(data) {
     const metadata = {
       'name': fileName,
       'mimeType': 'application/json',
-      'parents': ['appDataFolder']
+      'parents': [reptilTrackId]
     };
 
     const multipartRequestBody =
@@ -90,7 +117,6 @@ export async function saveToDrive(data) {
         close_delim;
 
     if (file) {
-      // 2. Update existing file
       await window.gapi.client.request({
         'path': '/upload/drive/v3/files/' + file.id,
         'method': 'PATCH',
@@ -101,7 +127,6 @@ export async function saveToDrive(data) {
         'body': multipartRequestBody
       });
     } else {
-      // 3. Create new file
       await window.gapi.client.request({
         'path': '/upload/drive/v3/files',
         'method': 'POST',
@@ -119,12 +144,15 @@ export async function saveToDrive(data) {
   }
 }
 
-// Load Data from Google Drive
+// Load Data from the specific path
 export async function loadFromDrive() {
   try {
+    const digitalSaurienId = await getOrCreateFolder('DigitalSaurien');
+    const cheptelId = await getOrCreateFolder('Cheptel', digitalSaurienId);
+    const reptilTrackId = await getOrCreateFolder('ReptilTrack', cheptelId);
+
     const response = await window.gapi.client.drive.files.list({
-      q: "name = 'reptiletrack_sync_backup.json' and 'appDataFolder' in parents",
-      spaces: 'appDataFolder',
+      q: `name = 'reptiletrack_sync_backup.json' and '${reptilTrackId}' in parents and trashed = false`,
       fields: 'files(id, name)',
     });
     
