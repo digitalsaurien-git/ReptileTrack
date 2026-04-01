@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { supabase } from "../supabase";
-import { initGoogleDrive, authenticateGoogle, saveToDrive } from "../utils/googleDrive";
+import { initGoogleDrive, authenticateGoogle, saveToDrive, loadFromDrive } from "../utils/googleDrive";
 
 const AppContext = createContext();
 
