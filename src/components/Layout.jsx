@@ -3,7 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { LayoutDashboard, Home, Plug, Settings, Sun, Moon, Euro, X, Check, Drumstick, Download, Upload, LogOut, Smartphone } from "lucide-react";
 import { Snake } from "./icons/Snake";
 import { useAppContext } from "../store/AppContext";
-import { saveToDrive } from "../utils/googleDrive";
+import { saveToDrive, loadFromDrive } from "../utils/googleDrive";
 import "./Layout.css";
 
 export function Layout() {
