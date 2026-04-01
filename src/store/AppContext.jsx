@@ -247,6 +247,7 @@ export function AppProvider({ children }) {
     loginWithEmail,
     exportData,
     importData,
+    setGoogleSyncEnabled,
     googleSyncEnabled,
     connectGoogleDrive,
     googleDriveReady,

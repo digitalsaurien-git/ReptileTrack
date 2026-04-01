@@ -9,7 +9,7 @@ import "./Layout.css";
 export function Layout() {
   const { 
     theme, toggleTheme, signOut, user, isGuest, setIsGuest, 
-    exportData, importData, googleSyncEnabled, connectGoogleDrive, 
+    exportData, importData, googleSyncEnabled, setGoogleSyncEnabled, connectGoogleDrive, 
     googleDriveReady, lastSync, setLastSync,
     animals, terrariums, equipments, foods, domotics, settings
   } = useAppContext();
@@ -128,11 +128,26 @@ export function Layout() {
 
                 <div style={{ paddingBottom: '3rem' }}></div>
                 <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--primary)', marginBottom: '1rem' }}>SÉCURITÉ CLOUD (DRIVE)</h4>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem', lineHeight: '1.4' }}>
-                  {googleSyncEnabled 
-                    ? "✅ Synchronisation automatique activée sur votre Drive." 
-                    : "Connectez votre Drive pour sauvegarder automatiquement vos animaux sur votre nuage personnel."}
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', margin: '0.5rem 0 1.5rem 0', background: 'rgba(255, 255, 255, 0.05)', padding: '0.8rem', borderRadius: '8px' }}>
+                  <input 
+                    type="checkbox" 
+                    id="auto-sync"
+                    checked={googleSyncEnabled}
+                    onChange={(e) => {
+                      setGoogleSyncEnabled(e.target.checked);
+                      localStorage.setItem('reptiltrack_google_sync', e.target.checked);
+                    }}
+                    style={{ 
+                      width: '18px', 
+                      height: '18px', 
+                      cursor: 'pointer',
+                      accentColor: 'var(--primary)'
+                    }}
+                  />
+                  <label htmlFor="auto-sync" style={{ fontSize: '0.75rem', color: 'var(--text-main)', cursor: 'pointer', fontWeight: '500' }}>
+                    Synchronisation automatique
+                  </label>
+                </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <button 
                   onClick={async () => {
