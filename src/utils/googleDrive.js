@@ -2,7 +2,7 @@
  * Google Drive Sync Service for ReptileTrack
  */
 
-const CLIENT_ID = "237594289779-naqdulplfc2d0jrmmc9sd2jjbgj95jlk.apps.googleusercontent.com";
+const CLIENT_ID = "867619813314-h3gf1ro6fn1ddotkttso119lbiphi2rv.apps.googleusercontent.com";
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
 let tokenClient;
