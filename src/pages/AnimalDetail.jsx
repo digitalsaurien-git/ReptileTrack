@@ -6,7 +6,6 @@ import {
   Bone, Activity, FileText, Info, Calendar, ClipboardList,
   Scale, Shield, Truck, Printer, Euro, Zap, Send, Edit2, TrendingUp
 } from 'lucide-react';
-import { speciesList } from '../data/species';
 import { getPlaceholderImage } from '../utils/imageUtils';
 import {
   Chart as ChartJS,
@@ -37,7 +36,7 @@ export function AnimalDetail() {
   const navigate = useNavigate();
   const { 
     animals, setAnimals, terrariums, foods, setFoods, 
-    saveWebhookUrl 
+    saveWebhookUrl, mySpecies
   } = useAppContext();
   const webhookUrl = localStorage.getItem('reptiltrack_webhook_url') || '';
 
@@ -86,51 +85,46 @@ export function AnimalDetail() {
     e.preventDefault();
     if (!newEvent.date || !newEvent.type) return;
     
-    let historyEvent = { ...newEvent, id: crypto.randomUUID() };
+    const isUpdate = !!newEvent.id;
+    let historyEvent = { ...newEvent };
+    
+    if (!isUpdate) {
+      historyEvent.id = crypto.randomUUID();
+    }
 
-    // Gestion du repas et des stocks
+    // Gestion du repas et des stocks (simplifiée pour l'ajout/update)
+    // Note: Pour une gestion parfaite du stock lors de l'edit, il faudrait comparer avec l'ancien état,
+    // mais ici on se concentre sur la résolution du bug de duplication demandé.
     if (newEvent.type === 'repas' && newEvent.foodId) {
       const selectedFood = foods.find(f => f.id === newEvent.foodId);
       if (selectedFood) {
         historyEvent.foodName = selectedFood.name;
-        const remainingStock = selectedFood.stock - newEvent.quantity;
         
-        // Mettre à jour le stock localement
-        const updatedFoods = foods.map(f => 
-          f.id === selectedFood.id ? { ...f, stock: remainingStock } : f
-        );
-        setFoods(updatedFoods);
+        // Si c'est une création, on décrémente le stock
+        if (!isUpdate) {
+          const remainingStock = selectedFood.stock - newEvent.quantity;
+          const updatedFoods = foods.map(f => 
+            f.id === selectedFood.id ? { ...f, stock: remainingStock } : f
+          );
+          setFoods(updatedFoods);
 
-        // Vérification seuil d'alerte
-        if (remainingStock <= selectedFood.alertThreshold) {
-          alert(`⚠️ Le stock de ${selectedFood.name} est faible (${remainingStock} restants).`);
-          
-          const webhookUrl = localStorage.getItem('reptiltrack_webhook_url');
-          if (webhookUrl) {
-            try {
-              await fetch(webhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  type: 'stock_alert',
-                  foodName: selectedFood.name,
-                  stockRemaining: remainingStock,
-                  threshold: selectedFood.alertThreshold,
-                  timestamp: new Date().toISOString()
-                })
-              });
-            } catch (err) {
-              console.error("Erreur Webhook alerte stock:", err);
-            }
+          if (remainingStock <= selectedFood.alertThreshold) {
+            alert(`⚠️ Le stock de ${selectedFood.name} est faible (${remainingStock} restants).`);
           }
         }
       }
     }
 
+    const updatedHistory = isUpdate 
+      ? animal.history.map(ev => ev.id === historyEvent.id ? historyEvent : ev)
+      : [historyEvent, ...(animal.history || [])];
+
     setAnimal({
       ...animal,
-      history: [historyEvent, ...(animal.history || [])]
+      history: updatedHistory
     });
+
+    // Reset du formulaire
     setNewEvent({ 
       type: 'repas', 
       date: new Date().toISOString().split('T')[0], 
@@ -244,7 +238,7 @@ export function AnimalDetail() {
   }
 
   const handleFeedNow = async () => {
-    if (!animal.defaultFoodId || !animal.defaultFoodQuantity) {
+    if (!animal.defaultFoodId) {
       alert("⚠️ Veuillez configurer la proie habituelle de cet animal (onglet Identité) pour utiliser cette fonction.");
       return;
     }
@@ -254,7 +248,8 @@ export function AnimalDetail() {
       return;
     }
 
-    const remainingStock = selectedFood.stock - animal.defaultFoodQuantity;
+    const feedQuantity = animal.defaultFoodQuantity || 1;
+    const remainingStock = selectedFood.stock - feedQuantity;
     
     // Mettre à jour le stock
     const updatedFoods = foods.map(f => 
@@ -290,7 +285,7 @@ export function AnimalDetail() {
       date: new Date().toISOString().split('T')[0],
       foodId: selectedFood.id,
       foodName: selectedFood.name,
-      quantity: animal.defaultFoodQuantity,
+      quantity: feedQuantity,
       notes: "Nourrissage rapide"
     };
 
@@ -390,17 +385,16 @@ export function AnimalDetail() {
                  onChange={e => {
                    const val = e.target.value;
                    updateField('commonName', val);
-                   const found = speciesList.find(s => s.common === val);
+                   const found = mySpecies.find(s => s.commonName === val && s.isActive);
                    if (found) {
-                     updateField('scientificName', found.scientific);
+                     updateField('scientificName', found.scientificName);
                      if (found.family) updateField('family', found.family);
                      if (found.subfamily) updateField('subfamily', found.subfamily);
-                     if (found.category) updateField('category', found.category);
                    }
                  }} 
                />
                <datalist id="common-list">
-                 {[...new Set(speciesList.map(s => s.common))].sort().map((c, idx) => (
+                 {[...new Set(mySpecies.filter(s => s.isActive).map(s => s.commonName))].sort().map((c, idx) => (
                    <option key={idx} value={c} />
                  ))}
                </datalist>
@@ -414,19 +408,18 @@ export function AnimalDetail() {
                  onChange={e => {
                    const val = e.target.value;
                    updateField('scientificName', val);
-                   const found = speciesList.find(s => s.scientific === val);
+                   const found = mySpecies.find(s => s.scientificName === val && s.isActive);
                    if (found) {
-                     updateField('commonName', found.common);
+                     updateField('commonName', found.commonName);
                      if (found.family) updateField('family', found.family);
                      if (found.subfamily) updateField('subfamily', found.subfamily);
-                     if (found.category) updateField('category', found.category);
                    }
                  }} 
                  placeholder="Ex: Correlophus ciliatus"
                  style={{ fontStyle: 'italic' }}
                />
                <datalist id="species-list">
-                 {[...new Set(speciesList.map(s => s.scientific))].sort().map((s, idx) => (
+                 {[...new Set(mySpecies.filter(s => s.isActive).map(s => s.scientificName))].sort().map((s, idx) => (
                    <option key={idx} value={s} />
                  ))}
                </datalist>

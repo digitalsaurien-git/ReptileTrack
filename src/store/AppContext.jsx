@@ -15,7 +15,14 @@ export function AppProvider({ children }) {
   const [equipments, setEquipments] = useLocalStorage("reptiltrack_equipments", []);
   const [foods, setFoods] = useLocalStorage("reptiltrack_foods", []);
   const [domotics, setDomotics] = useLocalStorage("reptiltrack_domotics", []);
-  const [settings, setSettings] = useLocalStorage("reptiltrack_settings", { kwhPrice: 0.25 });
+  const [mySpecies, setMySpecies] = useLocalStorage("reptiltrack_my_species", []);
+  const [settings, setSettings] = useLocalStorage("reptiltrack_settings", { 
+    kwhPrice: 0.15,
+    planner_duration: 13,
+    planner_vat: 20.0,
+    planner_transport: 0.0,
+    planner_box: 0.0
+  });
   const [googleSyncEnabled, setGoogleSyncEnabled] = useLocalStorage("reptiltrack_google_sync", false);
   const [googleDriveReady, setGoogleDriveReady] = useState(false);
   const [lastSync, setLastSync] = useLocalStorage("reptiltrack_last_sync", null);
@@ -30,7 +37,6 @@ export function AppProvider({ children }) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          console.log("✨ Session initiale détectée:", session.user.email);
           setUser(session.user);
         }
       } catch (err) {
@@ -44,7 +50,6 @@ export function AppProvider({ children }) {
 
     // Listen for changes (magic link, social login, logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("🔔 Auth Event:", event);
       if (session) {
         setUser(session.user);
       } else {
@@ -149,7 +154,7 @@ export function AppProvider({ children }) {
         entryDate: a.entry_date,
         entryNature: a.entry_nature,
         purchasePrice: a.purchase_price,
-        sale_price: a.sale_price,
+        salePrice: a.sale_price,
         entryJustification: a.entry_justification,
         terrariumId: a.terrarium_id,
         feedingFrequency: a.feeding_frequency,
@@ -180,7 +185,20 @@ export function AppProvider({ children }) {
       setFoods(data.fds.map(f => ({
         ...f,
         unitPrice: f.unit_price,
-        alertThreshold: f.alert_threshold
+        alertThreshold: f.alert_threshold,
+        maxFreezer: f.max_freezer || 0
+      })));
+    }
+    if (data.spcs) {
+      setMySpecies(data.spcs.map(s => ({
+        id: s.id,
+        scientificName: s.scientific_name,
+        commonName: s.common_name,
+        family: s.family,
+        subfamily: s.subfamily,
+        isActive: s.is_active,
+        isCustom: s.is_custom,
+        masterKey: s.master_key
       })));
     }
     if (data.doms) {
@@ -192,21 +210,127 @@ export function AppProvider({ children }) {
       })));
     }
     if (data.sets) {
-      setSettings({ ...settings, kwhPrice: data.sets.kwh_price });
+      setSettings({ 
+        ...settings, 
+        kwhPrice: data.sets.kwh_price,
+        planner_duration: data.sets.planner_duration || 13,
+        planner_vat: data.sets.planner_vat || 20.0,
+        planner_transport: data.sets.planner_transport || 0.0,
+        planner_box: data.sets.planner_box || 0.0
+      });
       if (data.sets.theme) setTheme(data.sets.theme);
       if (data.sets.webhook_url) localStorage.setItem('reptiltrack_webhook_url', data.sets.webhook_url);
     }
   };
 
+  const toggleSpecies = (species, active) => {
+    const existing = mySpecies.find(s => s.scientificName === species.scientific_name);
+    if (existing) {
+      setMySpecies(mySpecies.map(s => 
+        s.scientificName === species.scientific_name ? { ...s, isActive: active } : s
+      ));
+    } else if (active) {
+      setMySpecies([...mySpecies, {
+        id: crypto.randomUUID(),
+        scientificName: species.scientific_name,
+        commonName: species.common_name,
+        family: species.family,
+        subfamily: species.subfamily,
+        isActive: true,
+        isCustom: false,
+        masterKey: species.master_key
+      }]);
+    }
+  };
+
+  const addCustomSpecies = (species) => {
+    setMySpecies([...mySpecies, {
+      id: crypto.randomUUID(),
+      scientificName: species.scientificName,
+      commonName: species.commonName,
+      family: species.family,
+      subfamily: species.subfamily,
+      isActive: true,
+      isCustom: true,
+      masterKey: null
+    }]);
+  };
+
+  const updateSpecies = (id, updates) => {
+    setMySpecies(mySpecies.map(s => s.id === id ? { ...s, ...updates } : s));
+  };
+
+  const pullCloudToLocal = async () => {
+    if (!user) return;
+    setCloudStatus('loading');
+    const { data, error } = await supabase.rpc('get_user_data', { _user_id: user.id });
+    
+    if (error) {
+      console.error("❌ Erreur de récupération Cloud:", error);
+      setCloudStatus('sync_needed');
+      return;
+    }
+
+    if (data) {
+      console.log("📥 Données Cloud récupérées, mise à jour locale...");
+      if (data.ans) setAnimals(data.ans.map(a => ({
+        ...a,
+        feedingFrequency: a.feeding_frequency,
+        defaultFoodId: a.default_food_id,
+        defaultFoodQuantity: a.default_food_quantity
+      })));
+      if (data.ters) setTerrariums(data.ters.map(t => ({
+        ...t,
+        tempDay: t.temp_day,
+        tempNight: t.temp_night,
+        humidityDay: t.humidity_day,
+        humidityNight: t.humidity_night
+      })));
+      if (data.eqs) setEquipments(data.eqs);
+      if (data.fds) setFoods(data.fds.map(f => ({
+        ...f,
+        unitPrice: f.unit_price,
+        alertThreshold: f.alert_threshold,
+        maxFreezer: f.max_freezer || 0
+      })));
+      if (data.doms) setDomotics(data.doms.map(d => ({
+        ...d,
+        deviceId: d.device_id,
+        ipAddress: d.ip_address,
+        terrariumIds: d.terrarium_ids
+      })));
+      if (data.spcs) {
+        setMySpecies(data.spcs.map(s => ({
+          id: s.id,
+          scientificName: s.scientific_name,
+          commonName: s.common_name,
+          family: s.family,
+          subfamily: s.subfamily,
+          isActive: s.is_active,
+          isCustom: s.is_custom,
+          masterKey: s.master_key
+        })));
+      }
+      if (data.sets) {
+        setSettings({ 
+          ...settings, 
+          kwhPrice: data.sets.kwh_price,
+          planner_duration: data.sets.planner_duration || 13,
+          planner_vat: data.sets.planner_vat || 20.0,
+          planner_transport: data.sets.planner_transport || 0.0,
+          planner_box: data.sets.planner_box || 0.0
+        });
+        if (data.sets.theme) setTheme(data.sets.theme);
+        if (data.sets.webhook_url) localStorage.setItem('reptiltrack_webhook_url', data.sets.webhook_url);
+      }
+      setCloudStatus('synced');
+      setLastSync(new Date().toISOString());
+    }
+  };
 
   const pushLocalToCloud = async () => {
     if (!user || isGuest) return;
     setCloudStatus('loading');
-    
-    console.log("🚀 Démarrage de la synchronisation Cloud...");
-    console.log(`- Animaux détectés: ${animals.length}`);
-    console.log(`- Terrariums détectés: ${terrariums.length}`);
-    console.log(`- Équipements détectés: ${equipments.length}`);
 
     const mapAnimal = (a) => ({
       id: a.id,
@@ -245,6 +369,16 @@ export function AppProvider({ children }) {
       documents: a.documents || []
     });
 
+    const mapSettings = (s) => ({
+      user_id: user.id,
+      kwh_price: s.kwhPrice,
+      theme: theme,
+      planner_duration: s.planner_duration,
+      planner_vat: s.planner_vat,
+      planner_transport: s.planner_transport,
+      planner_box: s.planner_box
+    });
+
     const mapTerrarium = (t) => ({
       id: t.id,
       user_id: user.id,
@@ -272,17 +406,28 @@ export function AppProvider({ children }) {
       terrarium_id: e.terrariumId
     });
 
-    const mapFood = (f) => {
-      return {
-        id: f.id,
-        user_id: user.id,
-        name: f.name,
-        type: f.type,
-        stock: f.stock,
-        unit_price: f.unitPrice,
-        alert_threshold: f.alertThreshold
-      };
-    };
+    const mapFood = (f) => ({
+      id: f.id,
+      user_id: user.id,
+      name: f.name,
+      type: f.type,
+      stock: f.stock,
+      alert_threshold: f.alertThreshold,
+      unit_price: f.unitPrice,
+      max_freezer: f.maxFreezer || 0
+    });
+
+    const mapMySpecies = (s) => ({
+      id: s.id,
+      user_id: user.id,
+      scientific_name: s.scientificName,
+      common_name: s.commonName,
+      family: s.family,
+      subfamily: s.subfamily,
+      is_active: s.isActive,
+      is_custom: s.isCustom,
+      master_key: s.masterKey
+    });
 
     const mapDomotic = (d) => ({
       id: d.id,
@@ -296,9 +441,6 @@ export function AppProvider({ children }) {
       settings: d.settings
     });
 
-    if (animals.length > 0) console.log("📦 Payload premier animal:", mapAnimal(animals[0]));
-    if (terrariums.length > 0) console.log("📦 Payload premier terrarium:", mapTerrarium(terrariums[0]));
-
     try {
       // Nettoyage Cloud existant
       await Promise.all([
@@ -306,7 +448,8 @@ export function AppProvider({ children }) {
         supabase.from('rt_terrariums').delete().eq('user_id', user.id),
         supabase.from('rt_equipments').delete().eq('user_id', user.id),
         supabase.from('rt_foods').delete().eq('user_id', user.id),
-        supabase.from('rt_domotics').delete().eq('user_id', user.id)
+        supabase.from('rt_domotics').delete().eq('user_id', user.id),
+        supabase.from('rt_species').delete().eq('user_id', user.id)
       ]);
 
       // Upload groupé avec mapping
@@ -316,6 +459,7 @@ export function AppProvider({ children }) {
         equipments.length > 0 ? supabase.from('rt_equipments').insert(equipments.map(mapEquipment)) : Promise.resolve({ error: null }),
         foods.length > 0 ? supabase.from('rt_foods').insert(foods.map(mapFood)) : Promise.resolve({ error: null }),
         domotics.length > 0 ? supabase.from('rt_domotics').insert(domotics.map(mapDomotic)) : Promise.resolve({ error: null }),
+        mySpecies.length > 0 ? supabase.from('rt_species').insert(mySpecies.map(mapMySpecies)) : Promise.resolve({ error: null }),
         supabase.from('rt_settings').upsert({
           user_id: user.id,
           kwh_price: settings.kwhPrice,
@@ -343,13 +487,6 @@ export function AppProvider({ children }) {
   };
 
 
-  const pullCloudToLocal = () => {
-    if (remoteData) {
-      applyRemoteData(remoteData);
-      setCloudStatus('synced');
-      alert("✅ Données Cloud récupérées avec succès !");
-    }
-  };
 
   useEffect(() => {
     if (user) {
@@ -420,9 +557,7 @@ export function AppProvider({ children }) {
 
   const connectGoogleDrive = async () => {
     try {
-      console.log("🚀 Tentative de connexion Google Drive...");
       await authenticateGoogle();
-      console.log("✅ Authentification réussie !");
       setGoogleSyncEnabled(true);
       localStorage.setItem('reptiltrack_google_sync', 'true');
       alert("✅ ReptileTrack est maintenant synchronisé avec votre Google Drive !");
@@ -500,6 +635,11 @@ export function AppProvider({ children }) {
     setFoods,
     domotics,
     setDomotics,
+    mySpecies,
+    setMySpecies,
+    toggleSpecies,
+    addCustomSpecies,
+    updateSpecies,
     settings,
     setSettings,
     theme,
