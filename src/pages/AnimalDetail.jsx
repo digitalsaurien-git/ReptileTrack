@@ -383,15 +383,20 @@ export function AnimalDetail() {
                  list="common-list"
                  value={animal.commonName || ''} 
                  onChange={e => {
-                   const val = e.target.value;
-                   updateField('commonName', val);
-                   const found = mySpecies.find(s => s.commonName === val && s.isActive);
-                   if (found) {
-                     updateField('scientificName', found.scientificName);
-                     if (found.family) updateField('family', found.family);
-                     if (found.subfamily) updateField('subfamily', found.subfamily);
-                   }
-                 }} 
+                    const val = e.target.value;
+                    const found = mySpecies.find(s => s.commonName === val && s.isActive);
+                    if (found) {
+                      setAnimal(prev => ({
+                        ...prev,
+                        commonName: val,
+                        scientificName: found.scientificName || prev.scientificName,
+                        family: found.family || prev.family,
+                        subfamily: found.subfamily || prev.subfamily
+                      }));
+                    } else {
+                      updateField('commonName', val);
+                    }
+                  }} 
                />
                <datalist id="common-list">
                  {[...new Set(mySpecies.filter(s => s.isActive).map(s => s.commonName))].sort().map((c, idx) => (
@@ -406,15 +411,20 @@ export function AnimalDetail() {
                  list="species-list"
                  value={animal.scientificName || ''} 
                  onChange={e => {
-                   const val = e.target.value;
-                   updateField('scientificName', val);
-                   const found = mySpecies.find(s => s.scientificName === val && s.isActive);
-                   if (found) {
-                     updateField('commonName', found.commonName);
-                     if (found.family) updateField('family', found.family);
-                     if (found.subfamily) updateField('subfamily', found.subfamily);
-                   }
-                 }} 
+                    const val = e.target.value;
+                    const found = mySpecies.find(s => s.scientificName === val && s.isActive);
+                    if (found) {
+                      setAnimal(prev => ({
+                        ...prev,
+                        scientificName: val,
+                        commonName: found.commonName || prev.commonName,
+                        family: found.family || prev.family,
+                        subfamily: found.subfamily || prev.subfamily
+                      }));
+                    } else {
+                      updateField('scientificName', val);
+                    }
+                  }} 
                  placeholder="Ex: Correlophus ciliatus"
                  style={{ fontStyle: 'italic' }}
                />

@@ -100,26 +100,28 @@ export function AppProvider({ children }) {
         { data: equs },
         { data: fds },
         { data: doms },
-        { data: sets }
+        { data: sets },
+        { data: spcs }
       ] = await Promise.all([
         supabase.from('rt_animals').select('*'),
         supabase.from('rt_terrariums').select('*'),
         supabase.from('rt_equipments').select('*'),
         supabase.from('rt_foods').select('*'),
         supabase.from('rt_domotics').select('*'),
-        supabase.from('rt_settings').select('*').maybeSingle()
+        supabase.from('rt_settings').select('*').maybeSingle(),
+        supabase.from('rt_species').select('*')
       ]);
 
-      const hasRemoteData = (anims?.length > 0 || terrs?.length > 0 || equs?.length > 0 || fds?.length > 0 || doms?.length > 0);
-      const hasLocalData = (animals.length > 0 || terrariums.length > 0 || equipments.length > 0 || foods.length > 0 || domotics.length > 0);
+      const hasRemoteData = (anims?.length > 0 || terrs?.length > 0 || equs?.length > 0 || fds?.length > 0 || doms?.length > 0 || spcs?.length > 0);
+      const hasLocalData = (animals.length > 0 || terrariums.length > 0 || equipments.length > 0 || foods.length > 0 || domotics.length > 0 || mySpecies.length > 0);
 
-      setRemoteData({ anims, terrs, equs, fds, doms, sets });
+      setRemoteData({ anims, terrs, equs, fds, doms, sets, spcs });
 
       if (!hasRemoteData && hasLocalData) {
         setCloudStatus('sync_needed'); // Local présent, Cloud vide
       } else if (hasRemoteData && !hasLocalData) {
         // Cloud présent, Local vide -> Chargement auto car sans risque
-        applyRemoteData({ anims, terrs, equs, fds, doms, sets });
+        applyRemoteData({ anims, terrs, equs, fds, doms, sets, spcs });
         setCloudStatus('synced');
       } else if (hasRemoteData && hasLocalData) {
         // Conflit potentiel -> On demande à l'utilisateur

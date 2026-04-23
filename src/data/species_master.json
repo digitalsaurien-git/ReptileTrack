@@ -65,5 +65,10 @@
   { "scientific_name": "Furcifer pardalis", "common_name": "Caméléon panthère", "family": "Chamaeleonidae", "subfamily": "Chamaeleoninae", "master_key": "furcifer_pardalis" },
   { "scientific_name": "Chamaeleo calyptratus", "common_name": "Caméléon casqué du Yémen", "family": "Chamaeleonidae", "subfamily": "Chamaeleoninae", "master_key": "chamaeleo_calyptratus" },
   { "scientific_name": "Testudo hermanni", "common_name": "Tortue d'Hermann", "family": "Testudinidae", "subfamily": "Testudininae", "master_key": "testudo_hermanni" },
+  { "scientific_name": "Gastropholis prasina", "common_name": "Lézard émeraude (Green Keeled Bellied Lizard)", "family": "Lacertidae", "subfamily": "Lacertinae", "master_key": "gastropholis_prasina" },
+  { "scientific_name": "Timon lepidus", "common_name": "Lézard ocellé", "family": "Lacertidae", "subfamily": "Lacertinae", "master_key": "timon_lepidus" },
+  { "scientific_name": "Lacerta bilineata", "common_name": "Lézard vert occidental", "family": "Lacertidae", "subfamily": "Lacertinae", "master_key": "lacerta_bilineata" },
+  { "scientific_name": "Phelsuma grandis", "common_name": "Grand Gecko vert de Madagascar", "family": "Gekkonidae", "subfamily": "Gekkoninae", "master_key": "phelsuma_grandis" },
+  { "scientific_name": "Gekko gecko", "common_name": "Gecko Tokay", "family": "Gekkonidae", "subfamily": "Gekkoninae", "master_key": "gekko_gecko" },
   { "scientific_name": "Ambystoma mexicanum", "common_name": "Axolotl", "family": "Ambystomatidae", "subfamily": "Ambystomatinae", "master_key": "axolotl" }
 ]

@@ -29,8 +29,15 @@ export function Dashboard() {
   ).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 6);
 
   const familyDistribution = animals.reduce((acc, curr) => {
-    const speciesData = speciesList.find(s => s.scientific === curr.scientificName || s.common === curr.commonName);
-    const family = speciesData?.family || 'Autres / Inconnus';
+    // Priorité à la famille enregistrée sur l'animal (Nouveau Système)
+    let family = curr.family;
+
+    // Fallback sur la liste legacy si le champ est vide (Transition)
+    if (!family) {
+      const speciesData = speciesList.find(s => s.scientific === curr.scientificName || s.common === curr.commonName);
+      family = speciesData?.family || 'Autres / Inconnus';
+    }
+
     acc[family] = (acc[family] || 0) + 1;
     return acc;
   }, {});
