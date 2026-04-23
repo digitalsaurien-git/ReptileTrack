@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Home, Plug, Settings, Sun, Moon, Euro, X, Check, Drumstick, Download, Upload, LogOut, Smartphone } from "lucide-react";
+import { LayoutDashboard, Home, Plug, Settings, Sun, Moon, Euro, X, Check, Drumstick, Download, Upload, LogOut, Smartphone, RefreshCw } from "lucide-react";
 import { Snake } from "./icons/Snake";
 import { useAppContext } from "../store/AppContext";
 import { saveToDrive, loadFromDrive } from "../utils/googleDrive";
@@ -11,16 +11,19 @@ export function Layout() {
     theme, toggleTheme, signOut, user, isGuest, setIsGuest, 
     exportData, importData, googleSyncEnabled, setGoogleSyncEnabled, connectGoogleDrive, 
     googleDriveReady, lastSync, setLastSync,
-    animals, terrariums, equipments, foods, domotics, settings
+    animals, terrariums, equipments, foods, domotics, settings,
+    saveWebhookUrl, cloudStatus, pushLocalToCloud, pullCloudToLocal
   } = useAppContext();
+
   const [showSettings, setShowSettings] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState(localStorage.getItem('reptiltrack_webhook_url') || '');
 
   const saveWebhook = () => {
-    localStorage.setItem('reptiltrack_webhook_url', webhookUrl);
+    saveWebhookUrl(webhookUrl);
     setShowSettings(false);
   };
+
 
   const fileInputRef = useRef(null);
 
@@ -321,8 +324,55 @@ export function Layout() {
       </nav>
 
       <main className="main-content animate-fade-in">
+        {user && !isGuest && cloudStatus !== 'synced' && cloudStatus !== 'idle' && (
+          <div className="glass-panel" style={{ 
+            marginBottom: '2rem', 
+            padding: '1.25rem 2rem', 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            border: '1px solid var(--primary-glow)',
+            background: 'rgba(78, 222, 163, 0.05)',
+            borderRadius: '12px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <RefreshCw size={20} className={cloudStatus === 'loading' ? 'rotating' : ''} color="var(--primary)" />
+              <div>
+                <h4 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-main)' }}>
+                  {cloudStatus === 'sync_needed' && "☁️ Sauvegarde Cloud disponible"}
+                  {cloudStatus === 'conflict' && "⚠️ Différence détectée avec le Cloud"}
+                  {cloudStatus === 'checking' && "🔍 Vérification du Cloud..."}
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  {cloudStatus === 'sync_needed' && "Vos données locales peuvent être sauvegardées sur Digital Saurien."}
+                  {cloudStatus === 'conflict' && "Souhaitez-vous garder votre version locale ou récupérer celle du Cloud ?"}
+                  {cloudStatus === 'checking' && "Nous comparons vos données locales avec Digital Saurien."}
+                </p>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              {cloudStatus === 'sync_needed' && (
+                <button onClick={pushLocalToCloud} className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                  Synchroniser vers le Cloud
+                </button>
+              )}
+              {cloudStatus === 'conflict' && (
+                <>
+                  <button onClick={pushLocalToCloud} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', borderColor: 'var(--primary)' }}>
+                    Garder Local
+                  </button>
+                  <button onClick={pullCloudToLocal} className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                    Récupérer Cloud
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
         <Outlet />
       </main>
+
 
       {/* Mobile Bottom Navigation */}
       <nav className="bottom-nav glass-panel">

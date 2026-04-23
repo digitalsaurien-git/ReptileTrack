@@ -105,7 +105,7 @@ export function Dashboard() {
           <div>
             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>{formatCurrency(totalCostDay)} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>/ jour</span></div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>Budget Énergie</p>
-            <div style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', display: 'inline-block', fontSize: '0.75rem', color: 'var(--warning)' }}>
+            <div style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', background: 'var(--glass-bg-heavy)', borderRadius: '4px', display: 'inline-block', fontSize: '0.75rem', color: 'var(--warning)' }}>
               {formatCurrency(totalCostDay * 30.416)} / mois
             </div>
           </div>
@@ -126,7 +126,7 @@ export function Dashboard() {
               onClick={() => navigate(`/animals?family=${encodeURIComponent(family)}`)}
               className="family-card"
               style={{ 
-                background: 'rgba(255,255,255,0.03)', 
+                background: 'var(--glass-bg-subtle)', 
                 padding: '1.5rem', 
                 borderRadius: '12px', 
                 border: '1px solid var(--border-light)', 
@@ -136,7 +136,7 @@ export function Dashboard() {
               }}
             >
                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>{family}</div>
-               <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#fff' }}>{count}</div>
+               <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-bright)' }}>{count}</div>
                <div style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 600 }}>SPECIMENS</div>
             </div>
           ))}
@@ -170,7 +170,7 @@ export function Dashboard() {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                     <span className="badge" style={{ background: 'var(--bg-dark)', color: 'var(--primary)', border: '1px solid var(--primary-glow)' }}>{event.type}</span>
-                    <strong style={{ color: '#fff' }}>{event.animalName}</strong>
+                    <strong style={{ color: 'var(--text-bright)' }}>{event.animalName}</strong>
                   </div>
                   {event.notes && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{event.notes}</p>}
                 </div>

@@ -35,7 +35,12 @@ ChartJS.register(
 export function AnimalDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { animals, setAnimals, terrariums, foods, setFoods } = useAppContext();
+  const { 
+    animals, setAnimals, terrariums, foods, setFoods, 
+    saveWebhookUrl 
+  } = useAppContext();
+  const webhookUrl = localStorage.getItem('reptiltrack_webhook_url') || '';
+
   
   const [animal, setAnimal] = useState(null);
   const [activeTab, setActiveTab] = useState('infos');
@@ -357,8 +362,8 @@ export function AnimalDetail() {
         <div style={{ flex: 1, minWidth: '300px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(78, 222, 163, 0.05)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(78, 222, 163, 0.2)' }}>
           <div>
             <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Dernier Repas</div>
-            <div style={{ fontWeight: 600, color: lastMealDate ? '#fff' : 'var(--warning)', fontSize: '1.1rem' }}>
-              {lastMealDate ? lastMealDate.toLocaleDateString() : 'Aucun repas enregistré'}
+            <div style={{ fontWeight: 600, color: lastMealDate ? 'var(--text-bright)' : 'var(--warning)', fontSize: '1.1rem' }}>
+              {lastMealDate ? lastMealDate.toLocaleDateString() : 'Non enregistré'}
             </div>
             {animal.feedingFrequency && <div style={{ fontSize: '0.8rem', color: 'var(--primary)', marginTop: '0.25rem' }}>
               Prochain prévu le: {nextMealDate ? nextMealDate.toLocaleDateString() : 'N/A'}
@@ -473,7 +478,7 @@ export function AnimalDetail() {
                 </div>
              </div>
 
-             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: 'var(--radius-sm)' }}>
+             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', marginBottom: '1.5rem', background: 'var(--glass-bg-subtle)', padding: '1.5rem', borderRadius: 'var(--radius-sm)' }}>
                 <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-main)', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem' }}>Régime Alimentaire Type (Action Rapide)</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
                   <div>
@@ -574,7 +579,7 @@ export function AnimalDetail() {
                    onChange={e => updateField('photoUrl', e.target.value)} 
                  />
                </div>
-               <div style={{ border: '1px solid var(--border-light)', minHeight: '150px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+               <div style={{ border: '1px solid var(--border-light)', minHeight: '150px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--glass-bg-heavy)', overflow: 'hidden' }}>
                   {animal.photoUrl || (animal.commonName || animal.scientificName) ? (
                     <img 
                       src={animal.photoUrl || (getPlaceholderImage(animal).replace('600', '1200'))} 
@@ -883,7 +888,7 @@ export function AnimalDetail() {
                       </div>
                       
                       {item.type === 'repas' && item.foodName && (
-                        <div style={{ marginBottom: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', borderLeft: '2px solid var(--primary)', fontSize: '0.85rem' }}>
+                        <div style={{ marginBottom: '0.5rem', background: 'var(--glass-bg-heavy)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', borderLeft: '2px solid var(--primary)', fontSize: '0.85rem' }}>
                           🍗 <strong>Nourriture:</strong> {item.quantity}x {item.foodName}
                         </div>
                       )}
@@ -894,7 +899,7 @@ export function AnimalDetail() {
                         </div>
                       )}
 
-                      {item.notes && <p style={{ fontSize: '0.9rem', color: '#fff', opacity: 0.9 }}>{item.notes}</p>}
+                      {item.notes && <p style={{ fontSize: '0.9rem', color: 'var(--text-bright)', opacity: 0.9 }}>{item.notes}</p>}
                     </div>
                   </div>
                 ))}
@@ -968,9 +973,9 @@ export function AnimalDetail() {
                         {doc.type === 'cites' || doc.type === 'cession' ? <Shield size={20} color="var(--primary)" /> : <FileText size={20} color="var(--secondary)" />}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-bright)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           {doc.name} 
-                          <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.1)', padding: '0.1rem 0.4rem', borderRadius: '4px', opacity: 0.8 }}>
+                          <span style={{ fontSize: '0.65rem', background: 'var(--glass-bg-subtle)', padding: '0.1rem 0.4rem', borderRadius: '4px', opacity: 0.8 }}>
                             {doc.name.toLowerCase().endsWith('.pdf') ? 'PDF' : 'IMG'}
                           </span>
                         </div>
@@ -1172,7 +1177,7 @@ export function AnimalDetail() {
                  return (
                    <div style={{ textAlign: 'center' }}>
                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Poids Actuel</div>
-                     <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#fff' }}>{weightInG} <span style={{ fontSize: '1rem', color: 'var(--primary)' }}>g</span></div>
+                     <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--text-bright)' }}>{weightInG} <span style={{ fontSize: '1rem', color: 'var(--primary)' }}>g</span></div>
                      
                      {prevWeightInG && (
                        <div style={{ 

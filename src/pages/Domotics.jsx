@@ -160,7 +160,7 @@ export function Domotics() {
                 </div>
 
                 <div style={{ 
-                  background: 'rgba(0,0,0,0.1)', 
+                  background: 'var(--glass-bg-heavy)',
                   borderRadius: '12px', 
                   padding: '1rem', 
                   display: 'flex', 

@@ -108,7 +108,7 @@ export function Login() {
           </p>
         </div>
 
-        <div style={{ marginTop: '1.5rem', fontSize: '0.7rem', color: 'var(--text-muted)', background: 'rgba(0,0,0,0.1)', padding: '1rem', borderRadius: '8px' }}>
+        <div style={{ marginTop: '1.5rem', fontSize: '0.7rem', color: 'var(--text-muted)', background: 'var(--glass-bg-heavy)', padding: '1rem', borderRadius: '8px' }}>
           <strong>Besoin d'aide ?</strong> Si vous avez une erreur 404 après un mail, vérifiez que vous utilisez bien le tout dernier mail reçu.
         </div>
 

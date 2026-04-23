@@ -190,7 +190,7 @@ export function Animals() {
                   style={{ width: '45px', height: '45px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-light)' }} 
                 />
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#fff', marginBottom: '0.1rem', textTransform: 'uppercase' }}>
+                  <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-bright)', marginBottom: '0.1rem', textTransform: 'uppercase' }}>
                     {animal.nickname || animal.commonName || 'Specimen'}
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>

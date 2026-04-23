@@ -51,8 +51,7 @@
   height: 100vh;
   position: sticky;
   top: 0;
-  background: rgba(15, 20, 26, 0.4);
-  backdrop-filter: blur(20px);
+  background: var(--bg-surface);
   border-right: 1px solid var(--border-light);
   display: flex;
   flex-direction: column;
@@ -79,10 +78,7 @@
 }
 
 body:not(.light-mode) .logo h2 {
-  background: linear-gradient(to right, #fff, var(--text-muted));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-main);
 }
 
 body.light-mode .logo h2 {
@@ -112,13 +108,12 @@ body.light-mode .logo h2 {
 }
 
 .nav-item:hover {
-  background: rgba(78, 222, 163, 0.05);
-  color: #fff;
-  transform: translateX(4px);
+  background: var(--bg-card-hover);
+  color: var(--text-bright);
 }
 
 .nav-item.active {
-  background: linear-gradient(to right, rgba(78, 222, 163, 0.1), transparent);
+  background: var(--bg-card);
   color: var(--primary);
 }
 
@@ -171,9 +166,7 @@ body.light-mode .logo h2 {
     left: 0;
     right: 0;
     width: 100%;
-    background: rgba(9, 15, 21, 0.9);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: var(--bg-surface);
     border-top: 1px solid var(--border-light);
     padding: 0.75rem 0;
     padding-bottom: env(safe-area-inset-bottom, 0.75rem);
