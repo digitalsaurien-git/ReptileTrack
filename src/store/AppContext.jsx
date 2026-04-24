@@ -5,6 +5,89 @@ import { initGoogleDrive, authenticateGoogle, saveToDrive, loadFromDrive } from 
 
 const AppContext = createContext();
 
+// --- MAPPING HELPERS (Remote -> Local) ---
+const mapAnimalFromRemote = (a) => ({
+  ...a,
+  commonName: a.common_name,
+  scientificName: a.scientific_name,
+  birthDate: a.birth_date,
+  birthDateUnknown: a.birth_date_unknown,
+  photoUrl: a.photo_url,
+  citesStatus: a.cites_status,
+  euStatus: a.eu_status,
+  detentionRegime: a.detention_regime,
+  sourceCode: a.source_code,
+  citesNumber: a.cites_number,
+  idMethod: a.id_method,
+  idNumber: a.id_number,
+  idLocation: a.id_location,
+  legalNotes: a.legal_notes,
+  entryDate: a.entry_date,
+  entryNature: a.entry_nature,
+  purchasePrice: a.purchase_price,
+  salePrice: a.sale_price,
+  entryJustification: a.entry_justification,
+  terrariumId: a.terrarium_id,
+  feedingFrequency: a.feeding_frequency,
+  defaultFoodId: a.default_food_id,
+  defaultFoodQuantity: a.default_food_quantity
+});
+
+const mapTerrariumFromRemote = (t) => ({
+  ...t,
+  purchasePrice: t.purchase_price,
+  salePrice: t.sale_price,
+  tempDay: t.temp_day,
+  tempNight: t.temp_night,
+  humidityDay: t.humidity_day,
+  humidityNight: t.humidity_night
+});
+
+const mapEquipmentFromRemote = (e) => ({
+  ...e,
+  purchasePrice: e.purchase_price,
+  purchaseDate: e.purchase_date,
+  watts: e.power_watts,
+  hoursPerDay: e.hours_per_day,
+  replacementFreq: e.replacement_freq,
+  serialNumber: e.serial_number,
+  terrariumId: e.terrarium_id
+});
+
+const mapFoodFromRemote = (f) => ({
+  ...f,
+  unitPrice: f.unit_price,
+  alertThreshold: f.alert_threshold,
+  maxFreezer: f.max_freezer || 0
+});
+
+const mapSpeciesFromRemote = (s) => ({
+  id: s.id,
+  scientificName: s.scientific_name,
+  commonName: s.common_name,
+  family: s.family,
+  subfamily: s.subfamily,
+  isActive: s.is_active,
+  isCustom: s.is_custom,
+  masterKey: s.master_key
+});
+
+const mapDomoticFromRemote = (d) => ({
+  ...d,
+  deviceId: d.device_id,
+  ipAddress: d.ip_address,
+  terrariumIds: d.terrarium_ids
+});
+
+const mapSettingsFromRemote = (s, currentSettings) => ({
+  ...currentSettings,
+  kwhPrice: s.kwh_price,
+  planner_duration: s.planner_duration || 13,
+  planner_vat: s.planner_vat || 20.0,
+  planner_transport: s.planner_transport || 0.0,
+  planner_box: s.planner_box || 0.0
+});
+
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -136,90 +219,14 @@ export function AppProvider({ children }) {
   };
 
   const applyRemoteData = (data) => {
-    if (data.anims) {
-      setAnimals(data.anims.map(a => ({
-        ...a,
-        commonName: a.common_name,
-        scientificName: a.scientific_name,
-        birthDate: a.birth_date,
-        birthDateUnknown: a.birth_date_unknown,
-        photoUrl: a.photo_url,
-        citesStatus: a.cites_status,
-        euStatus: a.eu_status,
-        detentionRegime: a.detention_regime,
-        sourceCode: a.source_code,
-        citesNumber: a.cites_number,
-        idMethod: a.id_method,
-        idNumber: a.id_number,
-        idLocation: a.id_location,
-        legalNotes: a.legal_notes,
-        entryDate: a.entry_date,
-        entryNature: a.entry_nature,
-        purchasePrice: a.purchase_price,
-        salePrice: a.sale_price,
-        entryJustification: a.entry_justification,
-        terrariumId: a.terrarium_id,
-        feedingFrequency: a.feeding_frequency,
-        defaultFoodId: a.default_food_id,
-        defaultFoodQuantity: a.default_food_quantity
-      })));
-    }
-    if (data.terrs) {
-      setTerrariums(data.terrs.map(t => ({
-        ...t,
-        purchasePrice: t.purchase_price,
-        salePrice: t.sale_price
-      })));
-    }
-    if (data.equs) {
-      setEquipments(data.equs.map(e => ({
-        ...e,
-        purchasePrice: e.purchase_price,
-        purchaseDate: e.purchase_date,
-        watts: e.power_watts,
-        hoursPerDay: e.hours_per_day,
-        replacementFreq: e.replacement_freq,
-        serialNumber: e.serial_number,
-        terrariumId: e.terrarium_id
-      })));
-    }
-    if (data.fds) {
-      setFoods(data.fds.map(f => ({
-        ...f,
-        unitPrice: f.unit_price,
-        alertThreshold: f.alert_threshold,
-        maxFreezer: f.max_freezer || 0
-      })));
-    }
-    if (data.spcs) {
-      setMySpecies(data.spcs.map(s => ({
-        id: s.id,
-        scientificName: s.scientific_name,
-        commonName: s.common_name,
-        family: s.family,
-        subfamily: s.subfamily,
-        isActive: s.is_active,
-        isCustom: s.is_custom,
-        masterKey: s.master_key
-      })));
-    }
-    if (data.doms) {
-      setDomotics(data.doms.map(d => ({
-        ...d,
-        deviceId: d.device_id,
-        ipAddress: d.ip_address,
-        terrariumIds: d.terrarium_ids
-      })));
-    }
+    if (data.anims) setAnimals(data.anims.map(mapAnimalFromRemote));
+    if (data.terrs) setTerrariums(data.terrs.map(mapTerrariumFromRemote));
+    if (data.equs) setEquipments(data.equs.map(mapEquipmentFromRemote));
+    if (data.fds) setFoods(data.fds.map(mapFoodFromRemote));
+    if (data.spcs) setMySpecies(data.spcs.map(mapSpeciesFromRemote));
+    if (data.doms) setDomotics(data.doms.map(mapDomoticFromRemote));
     if (data.sets) {
-      setSettings({ 
-        ...settings, 
-        kwhPrice: data.sets.kwh_price,
-        planner_duration: data.sets.planner_duration || 13,
-        planner_vat: data.sets.planner_vat || 20.0,
-        planner_transport: data.sets.planner_transport || 0.0,
-        planner_box: data.sets.planner_box || 0.0
-      });
+      setSettings(mapSettingsFromRemote(data.sets, settings));
       if (data.sets.theme) setTheme(data.sets.theme);
       if (data.sets.webhook_url) localStorage.setItem('reptiltrack_webhook_url', data.sets.webhook_url);
     }
@@ -265,68 +272,42 @@ export function AppProvider({ children }) {
   const pullCloudToLocal = async () => {
     if (!user) return;
     setCloudStatus('loading');
-    const { data, error } = await supabase.rpc('get_user_data', { _user_id: user.id });
+    console.log(`🔍 Diagnostic Sync: Récupération manuelle pour user_id=${user.id}...`);
     
-    if (error) {
-      console.error("❌ Erreur de récupération Cloud:", error);
-      setCloudStatus('sync_needed');
-      return;
-    }
+    try {
+      const [
+        { data: anims, error: e1 },
+        { data: terrs, error: e2 },
+        { data: equs, error: e3 },
+        { data: fds, error: e4 },
+        { data: doms, error: e5 },
+        { data: sets, error: e6 },
+        { data: spcs, error: e7 }
+      ] = await Promise.all([
+        supabase.from('rt_animals').select('*'),
+        supabase.from('rt_terrariums').select('*'),
+        supabase.from('rt_equipments').select('*'),
+        supabase.from('rt_foods').select('*'),
+        supabase.from('rt_domotics').select('*'),
+        supabase.from('rt_settings').select('*').maybeSingle(),
+        supabase.from('rt_species').select('*')
+      ]);
 
-    if (data) {
-      console.log("📥 Données Cloud récupérées, mise à jour locale...");
-      if (data.ans) setAnimals(data.ans.map(a => ({
-        ...a,
-        feedingFrequency: a.feeding_frequency,
-        defaultFoodId: a.default_food_id,
-        defaultFoodQuantity: a.default_food_quantity
-      })));
-      if (data.ters) setTerrariums(data.ters.map(t => ({
-        ...t,
-        tempDay: t.temp_day,
-        tempNight: t.temp_night,
-        humidityDay: t.humidity_day,
-        humidityNight: t.humidity_night
-      })));
-      if (data.eqs) setEquipments(data.eqs);
-      if (data.fds) setFoods(data.fds.map(f => ({
-        ...f,
-        unitPrice: f.unit_price,
-        alertThreshold: f.alert_threshold,
-        maxFreezer: f.max_freezer || 0
-      })));
-      if (data.doms) setDomotics(data.doms.map(d => ({
-        ...d,
-        deviceId: d.device_id,
-        ipAddress: d.ip_address,
-        terrariumIds: d.terrarium_ids
-      })));
-      if (data.spcs) {
-        setMySpecies(data.spcs.map(s => ({
-          id: s.id,
-          scientificName: s.scientific_name,
-          commonName: s.common_name,
-          family: s.family,
-          subfamily: s.subfamily,
-          isActive: s.is_active,
-          isCustom: s.is_custom,
-          masterKey: s.master_key
-        })));
+      if (e1 || e2 || e3 || e4 || e5 || e7) {
+        throw new Error("Une ou plusieurs tables n'ont pas pu être récupérées.");
       }
-      if (data.sets) {
-        setSettings({ 
-          ...settings, 
-          kwhPrice: data.sets.kwh_price,
-          planner_duration: data.sets.planner_duration || 13,
-          planner_vat: data.sets.planner_vat || 20.0,
-          planner_transport: data.sets.planner_transport || 0.0,
-          planner_box: data.sets.planner_box || 0.0
-        });
-        if (data.sets.theme) setTheme(data.sets.theme);
-        if (data.sets.webhook_url) localStorage.setItem('reptiltrack_webhook_url', data.sets.webhook_url);
-      }
+
+      console.log(`📥 Données Cloud récupérées: ${anims?.length || 0} animaux, ${terrs?.length || 0} habitats.`);
+      
+      applyRemoteData({ anims, terrs, equs, fds, doms, sets, spcs });
+      
       setCloudStatus('synced');
       setLastSync(new Date().toISOString());
+      alert("✅ Données Cloud récupérées avec succès !");
+    } catch (err) {
+      console.error("❌ Erreur de récupération Cloud:", err);
+      alert("❌ Échec de la récupération Cloud. Vérifiez votre connexion.");
+      setCloudStatus('sync_needed');
     }
   };
 

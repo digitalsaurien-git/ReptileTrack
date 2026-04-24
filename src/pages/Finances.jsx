@@ -3,6 +3,7 @@ import { calculateDailyCost, formatCurrency } from '../utils/costCalculator';
 import { Euro, TrendingUp, Zap, Home, Plug } from 'lucide-react';
 import { Snake } from '../components/icons/Snake';
 import { speciesList } from '../data/species';
+import { sortAlphabetically } from '../utils/sortingUtils';
 
 export function Finances() {
   const { animals, terrariums, equipments, settings } = useAppContext();
@@ -125,7 +126,7 @@ export function Finances() {
            </h3>
 
            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {terrariums.map(t => {
+              {sortAlphabetically(terrariums, t => t.name).map(t => {
                 const tEquipments = equipments.filter(e => e.terrariumId === t.id);
                 const dailyCost = tEquipments.reduce((sum, current) => {
                   return sum + calculateDailyCost(current.watts, current.hoursPerDay, settings.kwhPrice);

@@ -2,17 +2,18 @@ import { useState } from 'react';
 import { useAppContext } from '../store/AppContext';
 import { Plus, Trash2, Home, Info, Wind, Zap, Plug, Euro, Link as LinkIcon } from 'lucide-react';
 import { calculateDailyCost, formatCurrency } from '../utils/costCalculator';
+import { sortAlphabetically } from '../utils/sortingUtils';
 
 const brands = [
-  'Habistat',
-  'Terratlantis',
-  'Exo Terra',
-  'Reptile Systems',
-  'Zoo Med',
-  'Herptek',
   'Abistat',
+  'Exo Terra',
+  'Habistat',
+  'Herptek',
   'PVC (Sur mesure)',
-  'Verre (Standard)'
+  'Reptile Systems',
+  'Terratlantis',
+  'Verre (Standard)',
+  'Zoo Med'
 ];
 
 export function Terrariums() {
@@ -74,7 +75,7 @@ export function Terrariums() {
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem' }}>
-        {terrariums.map(t => {
+        {sortAlphabetically(terrariums, t => t.name).map(t => {
           const tAnimals = animals.filter(a => a.terrariumId === t.id);
           const tEquipments = equipments.filter(e => e.terrariumId === t.id);
           return (
@@ -112,9 +113,9 @@ export function Terrariums() {
     const t = terrariums.find(terr => terr.id === selectedId);
     if (!t) return setSelectedId(null);
 
-    const tAnimals = animals.filter(a => a.terrariumId === t.id);
+    const tAnimals = sortAlphabetically(animals.filter(a => a.terrariumId === t.id), a => a.nickname || a.commonName || '');
     const tEquipments = equipments.filter(e => e.terrariumId === t.id);
-    const availableEquipments = equipments.filter(e => e.terrariumId !== t.id);
+    const availableEquipments = sortAlphabetically(equipments.filter(e => e.terrariumId !== t.id), e => e.name);
     
     const totalDailyCost = tEquipments.reduce((sum, current) => {
       return sum + calculateDailyCost(current.watts, current.hoursPerDay, settings.kwhPrice);

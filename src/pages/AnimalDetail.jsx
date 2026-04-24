@@ -19,6 +19,7 @@ import {
   Filler
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { sortAlphabetically } from '../utils/sortingUtils';
 
 ChartJS.register(
   CategoryScale,
@@ -301,6 +302,9 @@ export function AnimalDetail() {
     setAnimals(updatedList);
   };
 
+  const sortedFoods = sortAlphabetically(foods, f => f.name);
+  const sortedTerrariums = sortAlphabetically(terrariums, t => t.name);
+
   return (
     <div className="animate-fade-in print-container">
       <header className="no-print" style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
@@ -488,7 +492,7 @@ export function AnimalDetail() {
                     <label>Proie Habituelle</label>
                     <select value={animal.defaultFoodId || ''} onChange={e => updateField('defaultFoodId', e.target.value)}>
                       <option value="">Sélectionner une proie...</option>
-                      {foods.map(f => (
+                      {sortedFoods.map(f => (
                         <option key={f.id} value={f.id}>{f.name}</option>
                       ))}
                     </select>
@@ -564,7 +568,7 @@ export function AnimalDetail() {
                  style={{ marginBottom: '1.5rem' }}
                >
                  <option value="">-- Non assigné à un habitat --</option>
-                 {terrariums.map(t => (
+                 {sortedTerrariums.map(t => (
                    <option key={t.id} value={t.id}>{t.name || `Habitat ${t.id.substring(0, 4)}`}</option>
                  ))}
                </select>
@@ -775,7 +779,7 @@ export function AnimalDetail() {
                     <label style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>Proie</label>
                     <select value={newEvent.foodId} onChange={e => setNewEvent({...newEvent, foodId: e.target.value})}>
                       <option value="">Sélectionner une proie...</option>
-                      {foods.map(f => (
+                      {sortedFoods.map(f => (
                         <option key={f.id} value={f.id}>{f.name} (Stock: {f.stock})</option>
                       ))}
                     </select>

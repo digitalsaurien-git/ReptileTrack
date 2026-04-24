@@ -5,6 +5,7 @@ import { Plus, Search, Info, ShieldCheck, AlertCircle, ChevronRight, X, LayoutGr
 import { Snake } from '../components/icons/Snake' ;
 import { getPlaceholderImage } from '../utils/imageUtils';
 import { speciesList } from '../data/species';
+import { sortAlphabetically } from '../utils/sortingUtils';
 
 export function Animals() {
   const { animals, setAnimals, foods, setFoods } = useAppContext();
@@ -33,6 +34,8 @@ export function Animals() {
     const speciesData = speciesList.find(s => s.scientific === a.scientificName || s.common === a.commonName);
     return matchesSearch && speciesData?.family === familyFilter;
   });
+
+  const sortedAnimals = sortAlphabetically(filteredAnimals, a => a.nickname || a.commonName || a.scientificName || '');
 
   const clearFilters = () => {
     setSearchParams({});
@@ -168,7 +171,7 @@ export function Animals() {
         </div>
       </div>
 
-      {filteredAnimals.length === 0 ? (
+          {sortedAnimals.length === 0 ? (
         <div style={{ textAlign: 'center', marginTop: '6rem', color: 'var(--text-muted)' }}>
           <Info size={64} style={{ marginBottom: '1.5rem', opacity: 0.3, color: 'var(--primary)' }} />
           <h3 style={{ color: 'var(--text-main)', marginBottom: '0.5rem' }}>Aucun specimen trouvé</h3>
@@ -176,7 +179,7 @@ export function Animals() {
         </div>
       ) : viewMode === 'list' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingBottom: '3rem' }}>
-          {filteredAnimals.map(animal => (
+          {sortedAnimals.map(animal => (
             <div 
               key={animal.id} 
               className="glass-card"
@@ -216,7 +219,7 @@ export function Animals() {
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem', paddingBottom: '3rem' }}>
-          {filteredAnimals.map(animal => (
+          {sortedAnimals.map(animal => (
             <div 
               key={animal.id} 
               className="glass-card"

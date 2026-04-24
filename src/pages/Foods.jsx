@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useAppContext } from '../store/AppContext';
 import { Plus, Drumstick, Trash2, Edit2, AlertTriangle, Euro, Calculator, Download, Settings, Snowflake } from 'lucide-react';
 import { formatCurrency } from '../utils/costCalculator';
+import { sortAlphabetically } from '../utils/sortingUtils';
 
 export function Foods() {
   const { foods, setFoods, animals, settings, setSettings } = useAppContext();
@@ -59,6 +60,10 @@ export function Foods() {
     return animals.filter(a => a.status === 'vivant' || a.status === 'malade' || !a.status);
   }, [animals]);
 
+  const sortedFoods = useMemo(() => {
+    return sortAlphabetically(foods, f => f.name);
+  }, [foods]);
+
   // 2. Calcul des besoins par animal
   const animalNeeds = useMemo(() => {
     return activeAnimals.map(animal => {
@@ -78,6 +83,10 @@ export function Foods() {
       };
     });
   }, [activeAnimals, foods, settings.planner_duration, plannerOverrides]);
+
+  const sortedAnimalNeeds = useMemo(() => {
+    return sortAlphabetically(animalNeeds, n => n.name);
+  }, [animalNeeds]);
 
   // 3. Consolidation Liste de courses
   const shoppingList = useMemo(() => {
@@ -122,6 +131,10 @@ export function Foods() {
       };
     });
   }, [animalNeeds, foods, settings.planner_vat]);
+
+  const sortedShoppingList = useMemo(() => {
+    return sortAlphabetically(shoppingList, i => i.name);
+  }, [shoppingList]);
 
   // Totaux globaux
   const globalTotals = useMemo(() => {
@@ -300,7 +313,7 @@ export function Foods() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {foods.map(food => {
+                {sortedFoods.map(food => {
                   const isAlert = food.stock <= food.alertThreshold;
                   return (
                     <div key={food.id} className="glass-card" style={{ 
@@ -406,7 +419,7 @@ export function Foods() {
                     </tr>
                   </thead>
                   <tbody>
-                    {animalNeeds.map(need => (
+                    {sortedAnimalNeeds.map(need => (
                       <tr key={need.id} style={{ borderBottom: '1px solid var(--border-light)', transition: 'background 0.2s' }}>
                         <td style={{ padding: '1rem', fontWeight: 600 }}>{need.name}</td>
                         <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{need.foodName}</td>
@@ -460,7 +473,7 @@ export function Foods() {
                     </tr>
                   </thead>
                   <tbody>
-                    {shoppingList.map(item => (
+                    {sortedShoppingList.map(item => (
                       <tr key={item.foodId} style={{ borderBottom: '1px solid var(--border-light)' }}>
                         <td style={{ padding: '1rem', fontWeight: 600 }}>{item.name}</td>
                         <td style={{ padding: '1rem', textAlign: 'center' }}>{item.nbAnimals}</td>

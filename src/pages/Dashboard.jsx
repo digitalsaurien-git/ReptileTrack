@@ -4,6 +4,7 @@ import { Zap, Home, Activity, TrendingUp, AlertCircle, Utensils } from 'lucide-r
 import { Snake } from '../components/icons/Snake';
 import { useNavigate } from 'react-router-dom';
 import { speciesList } from '../data/species';
+import { sortAlphabetically } from '../utils/sortingUtils';
 
 export function Dashboard() {
   const { animals, terrariums, equipments, settings } = useAppContext();
@@ -23,6 +24,8 @@ export function Dashboard() {
     today.setHours(0,0,0,0);
     return today >= nextDate;
   });
+
+  const sortedAnimalsToFeed = sortAlphabetically(animalsToFeed, a => a.nickname || a.commonName || '');
 
   const allEvents = animals.flatMap(a => 
     (a.history || []).map(event => ({ ...event, animalName: a.commonName || 'Inconnu', animalId: a.id }))
@@ -56,7 +59,7 @@ export function Dashboard() {
             <Utensils size={22} /> Nourrissage Requis ({animalsToFeed.length})
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
-            {animalsToFeed.map(animal => (
+            {sortedAnimalsToFeed.map(animal => (
               <div 
                 key={animal.id} 
                 onClick={() => navigate(`/animals/${animal.id}`)}
