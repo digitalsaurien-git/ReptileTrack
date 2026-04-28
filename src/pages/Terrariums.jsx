@@ -5,7 +5,6 @@ import { calculateDailyCost, formatCurrency } from '../utils/costCalculator';
 import { sortAlphabetically } from '../utils/sortingUtils';
 
 const brands = [
-  'Abistat',
   'Exo Terra',
   'Habistat',
   'Herptek',
@@ -14,6 +13,14 @@ const brands = [
   'Terratlantis',
   'Verre (Standard)',
   'Zoo Med'
+];
+
+const defaultDimensions = [
+  '145 x 45 x 60',
+  '60 x 50 x 35',
+  '60 x 50 x 50',
+  '90 x 60 x 50',
+  '120 x 70 x 50'
 ];
 
 export function Terrariums() {
@@ -121,6 +128,41 @@ export function Terrariums() {
       return sum + calculateDailyCost(current.watts, current.hoursPerDay, settings.kwhPrice);
     }, 0);
 
+    // Normalisation et déduplication des dimensions
+    const normalize = (s) => {
+      if (!s) return '';
+      const res = s.split(/[x×*]/).map(v => v.toString().trim().replace(/[^0-9]/g, ''));
+      const l = res[0] || '0';
+      const p = res[1] || '0';
+      const h = res[2] || '0';
+      return `${l} x ${p} x ${h}`;
+    };
+
+    const existingDimensions = terrariums.map(terr => normalize(terr.dimensions)).filter(Boolean);
+    const allDimensions = Array.from(new Set([...defaultDimensions.map(normalize), ...existingDimensions]))
+      .sort((a, b) => {
+        const parse = (s) => s.split(' x ').map(v => parseInt(v) || 0);
+        const [l1, p1, h1] = parse(a);
+        const [l2, p2, h2] = parse(b);
+        if (l1 !== l2) return l1 - l2;
+        if (p1 !== p2) return p1 - p2;
+        return h1 - h2;
+      });
+
+    // Helper pour parser les dimensions actuelles du terrarium
+    const currentDimParts = (t.dimensions || '').split(/[x×*]/).map(s => s.toString().trim().replace(/[^0-9]/g, ''));
+    const dimL = currentDimParts[0] || '';
+    const dimP = currentDimParts[1] || '';
+    const dimH = currentDimParts[2] || '';
+
+    const handleDimChange = (field, value) => {
+      const parts = [dimL, dimP, dimH];
+      if (field === 'L') parts[0] = value;
+      if (field === 'P') parts[1] = value;
+      if (field === 'H') parts[2] = value;
+      updateTerrarium(t.id, 'dimensions', parts.join(' x '));
+    };
+
     return (
       <div className="animate-fade-in">
         <button 
@@ -173,15 +215,45 @@ export function Terrariums() {
               </div>
               <div>
                 <label>Dimensions (LxPxH)</label>
-                <div style={{ position: 'relative' }}>
-                  <Wind size={16} style={{ position: 'absolute', left: '1rem', top: '1.1rem', color: 'var(--primary)' }} />
-                  <input 
-                    type="text" 
-                    value={t.dimensions || ''} 
-                    onChange={(e) => updateTerrarium(t.id, 'dimensions', e.target.value)}
-                    placeholder="Ex: 45x45x60 cm"
-                    style={{ paddingLeft: '2.75rem' }}
-                  />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ position: 'relative' }}>
+                    <Wind size={16} style={{ position: 'absolute', left: '1rem', top: '1.1rem', color: 'var(--primary)' }} />
+                    <select 
+                      value={allDimensions.includes(normalize(t.dimensions)) ? normalize(t.dimensions) : ""} 
+                      onChange={(e) => updateTerrarium(t.id, 'dimensions', e.target.value)}
+                      style={{ paddingLeft: '2.75rem' }}
+                    >
+                      <option value="">-- Format libre --</option>
+                      {allDimensions.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                    <input 
+                      type="number" 
+                      value={dimL} 
+                      onChange={(e) => handleDimChange('L', e.target.value)}
+                      placeholder="Long."
+                      style={{ textAlign: 'center', padding: '0.6rem 0.2rem' }}
+                    />
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>×</span>
+                    <input 
+                      type="number" 
+                      value={dimP} 
+                      onChange={(e) => handleDimChange('P', e.target.value)}
+                      placeholder="Prof."
+                      style={{ textAlign: 'center', padding: '0.6rem 0.2rem' }}
+                    />
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>×</span>
+                    <input 
+                      type="number" 
+                      value={dimH} 
+                      onChange={(e) => handleDimChange('H', e.target.value)}
+                      placeholder="Haut."
+                      style={{ textAlign: 'center', padding: '0.6rem 0.2rem' }}
+                    />
+                  </div>
                 </div>
               </div>
               <div>
