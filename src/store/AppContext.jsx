@@ -289,6 +289,11 @@ export function AppProvider({ children }) {
     const oldSpecies = mySpecies.find(s => s.id === id);
     if (!oldSpecies) return;
 
+    // Nettoyage du nom scientifique si présent
+    if (updates.scientificName) {
+      updates.scientificName = String(updates.scientificName || '').trim().replace(/\s+/g, ' ');
+    }
+
     // Si on change le nom scientifique, on vérifie les doublons
     if (updates.scientificName && updates.scientificName !== oldSpecies.scientificName) {
       const normNew = normalizeSpeciesName(updates.scientificName);
@@ -297,13 +302,21 @@ export function AppProvider({ children }) {
         alert("Une espèce avec ce nom scientifique existe déjà dans votre catalogue.");
         return;
       }
-
-      // On propage le changement de nom aux animaux
-      const updatedAnimals = animals.map(a => 
-        a.scientificName === oldSpecies.scientificName ? { ...a, scientificName: updates.scientificName } : a
-      );
-      setAnimals(updatedAnimals);
     }
+
+    // Propagation aux animaux liés par le nom scientifique
+    const updatedAnimals = animals.map(a => {
+      if (a.scientificName === oldSpecies.scientificName) {
+        return { 
+          ...a, 
+          scientificName: updates.scientificName || a.scientificName,
+          family: updates.family !== undefined ? updates.family : a.family,
+          subfamily: updates.subfamily !== undefined ? updates.subfamily : a.subfamily
+        };
+      }
+      return a;
+    });
+    setAnimals(updatedAnimals);
 
     setMySpecies(mySpecies.map(s => s.id === id ? { ...s, ...updates } : s));
   };

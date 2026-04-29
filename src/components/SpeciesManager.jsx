@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
-import { Search, Plus, Check, X, ShieldAlert, Globe, Star } from "lucide-react";
+import { Search, Plus, Check, X, ShieldAlert, Globe, Star, Edit2, Trash2 } from "lucide-react";
 import { useAppContext } from "../store/AppContext";
 import speciesMaster from "../data/species_master.json";
 
 export function SpeciesManager({ onClose }) {
-  const { mySpecies, toggleSpecies, addCustomSpecies, updateSpecies } = useAppContext();
+  const { mySpecies, toggleSpecies, addCustomSpecies, updateSpecies, deleteSpecies, animals } = useAppContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddCustom, setShowAddCustom] = useState(false);
   const [newSpecies, setNewSpecies] = useState({
@@ -13,6 +13,31 @@ export function SpeciesManager({ onClose }) {
     family: "",
     subfamily: ""
   });
+
+  // État pour l'édition en ligne
+  const [editingId, setEditingId] = useState(null);
+  const [editFields, setEditFields] = useState({ 
+    scientificName: "", 
+    commonName: "",
+    family: "",
+    subfamily: ""
+  });
+
+  const startEdit = (s) => {
+    setEditingId(s.id);
+    setEditFields({ 
+      scientificName: s.scientificName, 
+      commonName: s.commonName,
+      family: s.family || "",
+      subfamily: s.subfamily || ""
+    });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editFields.scientificName.trim()) return;
+    updateSpecies(editingId, editFields);
+    setEditingId(null);
+  };
 
   // Filtrage du catalogue maître
   const filteredMaster = useMemo(() => {
@@ -40,7 +65,7 @@ export function SpeciesManager({ onClose }) {
       left: '50%', 
       transform: 'translate(-50%, -50%)', 
       width: '95%', 
-      maxWidth: '600px', 
+      maxWidth: '650px', 
       maxHeight: '85vh', 
       display: 'flex', 
       flexDirection: 'column',
@@ -147,65 +172,189 @@ export function SpeciesManager({ onClose }) {
                   Votre catalogue est vide.
                 </div>
               )}
-              {mySpecies.map((s, index) => (
-                <div 
-                  key={s.id} 
-                  style={{ 
-                    padding: '0.75rem 1rem', 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    borderBottom: index !== mySpecies.length - 1 ? '1px solid var(--border-light)' : 'none',
-                    opacity: s.isActive ? 1 : 0.6
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.85rem' }}>{s.scientificName}</span>
-                      {s.isCustom && <Star size={10} color="var(--warning)" fill="var(--warning)" />}
-                    </div>
-                    <input 
-                      type="text" 
-                      value={s.commonName} 
-                      placeholder="Ajouter un nom commun..."
-                      onChange={(e) => updateSpecies(s.id, { commonName: e.target.value })}
-                      style={{ 
-                        fontSize: '0.75rem', 
-                        color: 'var(--text-muted)', 
-                        background: 'transparent', 
-                        border: 'none', 
-                        borderBottom: '1px solid transparent', 
-                        padding: 0, 
-                        width: '100%', 
-                        caretColor: 'var(--primary)', 
-                        outline: 'none',
-                        marginTop: '2px'
-                      }}
-                      onFocus={(e) => e.target.style.borderBottom = '1px solid var(--primary)'}
-                      onBlur={(e) => e.target.style.borderBottom = '1px solid transparent'}
-                    />
-                  </div>
-                  <button 
-                    onClick={() => updateSpecies(s.id, { isActive: !s.isActive })}
+              {mySpecies.map((s, index) => {
+                const isUsed = animals.some(a => a.scientificName === s.scientificName);
+                const isEditing = editingId === s.id;
+
+                return (
+                  <div 
+                    key={s.id} 
                     style={{ 
-                      background: 'transparent', 
-                      border: '1px solid var(--border-light)',
-                      borderRadius: '6px',
-                      width: '26px',
-                      height: '26px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: s.isActive ? 'var(--primary)' : 'var(--text-muted)',
-                      cursor: 'pointer',
-                      marginLeft: '1rem',
-                      transition: 'all 0.2s'
+                      padding: '1rem', 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center', 
+                      borderBottom: index !== mySpecies.length - 1 ? '1px solid var(--border-light)' : 'none',
+                      opacity: s.isActive || isEditing ? 1 : 0.6,
+                      background: isEditing ? 'rgba(var(--primary-rgb), 0.05)' : 'transparent'
                     }}
                   >
-                    {s.isActive ? <Check size={14} /> : <X size={14} />}
-                  </button>
-                </div>
-              ))}
+                    <div style={{ flex: 1, marginRight: '1rem' }}>
+                      {isEditing ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                          <div style={{ gridColumn: 'span 2' }}>
+                            <label style={{ fontSize: '0.65rem', color: 'var(--primary)', textTransform: 'uppercase', marginBottom: '2px', display: 'block' }}>Nom scientifique</label>
+                            <input 
+                              value={editFields.scientificName}
+                              onChange={e => setEditFields({...editFields, scientificName: e.target.value})}
+                              placeholder="Nom scientifique"
+                              autoFocus
+                              style={{ 
+                                fontSize: '0.85rem', 
+                                fontWeight: 600, 
+                                color: 'var(--text-main)', 
+                                background: 'var(--bg-dark)', 
+                                border: '1px solid var(--primary)', 
+                                padding: '6px 8px',
+                                borderRadius: '4px',
+                                outline: 'none',
+                                width: '100%'
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '2px', display: 'block' }}>Nom commun</label>
+                            <input 
+                              value={editFields.commonName}
+                              onChange={e => setEditFields({...editFields, commonName: e.target.value})}
+                              placeholder="Nom commun"
+                              style={{ 
+                                fontSize: '0.75rem', 
+                                color: 'var(--text-muted)', 
+                                background: 'var(--bg-dark)', 
+                                border: '1px solid var(--border-light)', 
+                                padding: '6px 8px',
+                                borderRadius: '4px',
+                                outline: 'none',
+                                width: '100%'
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '2px', display: 'block' }}>Famille / Sous-Famille</label>
+                            <div style={{ display: 'flex', gap: '0.25rem' }}>
+                              <input 
+                                value={editFields.family}
+                                onChange={e => setEditFields({...editFields, family: e.target.value})}
+                                placeholder="Famille"
+                                style={{ 
+                                  fontSize: '0.75rem', 
+                                  color: 'var(--text-muted)', 
+                                  background: 'var(--bg-dark)', 
+                                  border: '1px solid var(--border-light)', 
+                                  padding: '6px 8px',
+                                  borderRadius: '4px',
+                                  outline: 'none',
+                                  width: '50%'
+                                }}
+                              />
+                              <input 
+                                value={editFields.subfamily}
+                                onChange={e => setEditFields({...editFields, subfamily: e.target.value})}
+                                placeholder="Sous-famille"
+                                style={{ 
+                                  fontSize: '0.75rem', 
+                                  color: 'var(--text-muted)', 
+                                  background: 'var(--bg-dark)', 
+                                  border: '1px solid var(--border-light)', 
+                                  padding: '6px 8px',
+                                  borderRadius: '4px',
+                                  outline: 'none',
+                                  width: '50%'
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.85rem' }}>{s.scientificName}</span>
+                            {s.isCustom && <Star size={10} color="var(--warning)" fill="var(--warning)" title="Espèce personnalisée" />}
+                            {isUsed && <ShieldAlert size={10} color="var(--secondary)" title="Utilisée par un animal" />}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            {s.commonName || "Aucun nom commun"} {s.family ? `• ${s.family}` : ""} {s.subfamily ? `• ${s.subfamily}` : ""}
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                      {isEditing ? (
+                        <>
+                          <button 
+                            onClick={handleSaveEdit}
+                            style={{ background: 'var(--primary)', border: 'none', borderRadius: '4px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer' }}
+                            title="Enregistrer"
+                          >
+                            <Check size={16} />
+                          </button>
+                          <button 
+                            onClick={() => setEditingId(null)}
+                            style={{ background: 'var(--bg-dark)', border: '1px solid var(--border-light)', borderRadius: '4px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', cursor: 'pointer' }}
+                            title="Annuler"
+                          >
+                            <X size={16} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {s.isCustom && (
+                            <button 
+                              onClick={() => startEdit(s)}
+                              style={{ background: 'transparent', border: '1px solid var(--border-light)', borderRadius: '4px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', cursor: 'pointer' }}
+                              title="Modifier l'espèce"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                          )}
+                          {s.isCustom && (
+                            <button 
+                              onClick={() => deleteSpecies(s.id)}
+                              style={{ 
+                                background: 'transparent', 
+                                border: '1px solid var(--border-light)', 
+                                borderRadius: '4px', 
+                                width: '32px', 
+                                height: '32px', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center', 
+                                color: isUsed ? 'rgba(255,82,82,0.2)' : 'var(--danger)', 
+                                cursor: isUsed ? 'not-allowed' : 'pointer' 
+                              }}
+                              title={isUsed ? "Cette espèce est utilisée par un ou plusieurs animaux et ne peut pas être supprimée." : "Supprimer de mon catalogue"}
+                              disabled={isUsed}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => updateSpecies(s.id, { isActive: !s.isActive })}
+                            style={{ 
+                              background: 'transparent', 
+                              border: '1px solid var(--border-light)',
+                              borderRadius: '4px',
+                              width: '32px',
+                              height: '32px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: s.isActive ? 'var(--primary)' : 'var(--text-muted)',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                            title={s.isActive ? "Désactiver du sélecteur" : "Activer dans le sélecteur"}
+                          >
+                            {s.isActive ? <Check size={16} /> : <X size={16} />}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
