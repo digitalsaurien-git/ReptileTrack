@@ -6,6 +6,16 @@ import { initGoogleDrive, authenticateGoogle, saveToDrive, loadFromDrive } from 
 const AppContext = createContext();
 
 // --- MAPPING HELPERS (Remote -> Local) ---
+const normalizeSpeciesName = (name) => {
+  if (!name) return "";
+  return name
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+};
+
 const mapAnimalFromRemote = (a) => ({
   ...a,
   commonName: a.common_name,
@@ -233,11 +243,13 @@ export function AppProvider({ children }) {
   };
 
   const toggleSpecies = (species, active) => {
-    const existing = mySpecies.find(s => s.scientificName === species.scientific_name);
-    if (existing) {
-      setMySpecies(mySpecies.map(s => 
-        s.scientificName === species.scientific_name ? { ...s, isActive: active } : s
-      ));
+    const normName = normalizeSpeciesName(species.scientific_name);
+    const existingIndex = mySpecies.findIndex(s => normalizeSpeciesName(s.scientificName) === normName);
+
+    if (existingIndex > -1) {
+      const updated = [...mySpecies];
+      updated[existingIndex] = { ...updated[existingIndex], isActive: active };
+      setMySpecies(updated);
     } else if (active) {
       setMySpecies([...mySpecies, {
         id: crypto.randomUUID(),
@@ -253,6 +265,14 @@ export function AppProvider({ children }) {
   };
 
   const addCustomSpecies = (species) => {
+    const normName = normalizeSpeciesName(species.scientificName);
+    const existing = mySpecies.find(s => normalizeSpeciesName(s.scientificName) === normName);
+    
+    if (existing) {
+      updateSpecies(existing.id, { isActive: true, ...species });
+      return;
+    }
+
     setMySpecies([...mySpecies, {
       id: crypto.randomUUID(),
       scientificName: species.scientificName,
@@ -266,7 +286,41 @@ export function AppProvider({ children }) {
   };
 
   const updateSpecies = (id, updates) => {
+    const oldSpecies = mySpecies.find(s => s.id === id);
+    if (!oldSpecies) return;
+
+    // Si on change le nom scientifique, on vérifie les doublons
+    if (updates.scientificName && updates.scientificName !== oldSpecies.scientificName) {
+      const normNew = normalizeSpeciesName(updates.scientificName);
+      const duplicate = mySpecies.find(s => s.id !== id && normalizeSpeciesName(s.scientificName) === normNew);
+      if (duplicate) {
+        alert("Une espèce avec ce nom scientifique existe déjà dans votre catalogue.");
+        return;
+      }
+
+      // On propage le changement de nom aux animaux
+      const updatedAnimals = animals.map(a => 
+        a.scientificName === oldSpecies.scientificName ? { ...a, scientificName: updates.scientificName } : a
+      );
+      setAnimals(updatedAnimals);
+    }
+
     setMySpecies(mySpecies.map(s => s.id === id ? { ...s, ...updates } : s));
+  };
+
+  const deleteSpecies = (id) => {
+    const species = mySpecies.find(s => s.id === id);
+    if (!species) return;
+
+    const isUsed = animals.some(a => a.scientificName === species.scientificName);
+    if (isUsed) {
+      alert("❌ Suppression impossible : Cette espèce est utilisée par un ou plusieurs animaux.");
+      return;
+    }
+
+    if (window.confirm(`Supprimer l'espèce "${species.scientificName}" du catalogue ?`)) {
+      setMySpecies(mySpecies.filter(s => s.id !== id));
+    }
   };
 
   const pullCloudToLocal = async () => {
@@ -319,7 +373,7 @@ export function AppProvider({ children }) {
       id: a.id,
       user_id: user.id,
       common_name: a.commonName,
-      scientific_name: a.scientificName,
+      scientific_name: String(a.scientificName || '').trim().replace(/\s+/g, ' '),
       family: a.family,
       subfamily: a.subfamily,
       nickname: a.nickname,
@@ -400,17 +454,25 @@ export function AppProvider({ children }) {
       max_freezer: f.maxFreezer || 0
     });
 
-    const mapMySpecies = (s) => ({
-      id: s.id,
-      user_id: user.id,
-      scientific_name: s.scientificName,
-      common_name: s.commonName,
-      family: s.family,
-      subfamily: s.subfamily,
-      is_active: s.isActive,
-      is_custom: s.isCustom,
-      master_key: s.masterKey
-    });
+    // Récupération des espèces cloud actuelles pour mapper les IDs et éviter les conflits d'identité
+    const { data: cloudSpecies } = await supabase.from('rt_species').select('id, scientific_name').eq('user_id', user.id);
+
+    const mapMySpecies = (s) => {
+      const normName = normalizeSpeciesName(s.scientificName);
+      const cloudMatch = cloudSpecies?.find(cs => normalizeSpeciesName(cs.scientific_name) === normName);
+
+      return {
+        id: cloudMatch ? cloudMatch.id : s.id, // Priorité à l'ID Cloud pour forcer l'UPDATE si le nom a changé de casse
+        user_id: user.id,
+        scientific_name: String(s.scientificName || '').trim().replace(/\s+/g, ' '),
+        common_name: s.commonName,
+        family: s.family,
+        subfamily: s.subfamily,
+        is_active: s.isActive,
+        is_custom: s.isCustom,
+        master_key: s.masterKey
+      };
+    };
 
     const mapDomotic = (d) => ({
       id: d.id,
@@ -426,14 +488,29 @@ export function AppProvider({ children }) {
 
     try {
       // Nettoyage Cloud existant
-      await Promise.all([
+      const deleteResults = await Promise.all([
         supabase.from('rt_animals').delete().eq('user_id', user.id),
         supabase.from('rt_terrariums').delete().eq('user_id', user.id),
         supabase.from('rt_equipments').delete().eq('user_id', user.id),
         supabase.from('rt_foods').delete().eq('user_id', user.id),
-        supabase.from('rt_domotics').delete().eq('user_id', user.id),
-        supabase.from('rt_species').delete().eq('user_id', user.id)
+        supabase.from('rt_domotics').delete().eq('user_id', user.id)
+        // Note: rt_species n'est pas supprimé pour préserver les contraintes d'intégrité
+        // L'upsert ci-dessous se chargera de mettre à jour les données existantes.
       ]);
+
+      const deleteError = deleteResults.find(r => r.error)?.error;
+      if (deleteError) {
+        console.warn("⚠️ Certains éléments n'ont pas pu être supprimés du cloud, tentative d'upsert...", deleteError);
+      }
+
+      // Préparation des espèces (normalisation et dédoublonnage pour éviter unique_species_per_user)
+      const seenNames = new Set();
+      const uniqueSpecies = mySpecies.filter(s => {
+        const norm = normalizeSpeciesName(s.scientificName);
+        if (!norm || seenNames.has(norm)) return false;
+        seenNames.add(norm);
+        return true;
+      });
 
       // Upload groupé avec mapping
       const results = await Promise.all([
@@ -442,7 +519,7 @@ export function AppProvider({ children }) {
         equipments.length > 0 ? supabase.from('rt_equipments').insert(equipments.map(mapEquipment)) : Promise.resolve({ error: null }),
         foods.length > 0 ? supabase.from('rt_foods').insert(foods.map(mapFood)) : Promise.resolve({ error: null }),
         domotics.length > 0 ? supabase.from('rt_domotics').insert(domotics.map(mapDomotic)) : Promise.resolve({ error: null }),
-        mySpecies.length > 0 ? supabase.from('rt_species').insert(mySpecies.map(mapMySpecies)) : Promise.resolve({ error: null }),
+        uniqueSpecies.length > 0 ? supabase.from('rt_species').upsert(uniqueSpecies.map(mapMySpecies), { onConflict: 'user_id,scientific_name' }) : Promise.resolve({ error: null }),
         supabase.from('rt_settings').upsert({
           user_id: user.id,
           kwh_price: settings.kwhPrice,
@@ -623,6 +700,7 @@ export function AppProvider({ children }) {
     toggleSpecies,
     addCustomSpecies,
     updateSpecies,
+    deleteSpecies,
     settings,
     setSettings,
     theme,
