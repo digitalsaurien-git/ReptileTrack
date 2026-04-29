@@ -470,30 +470,6 @@ export function AppProvider({ children }) {
     // Récupération des espèces cloud actuelles pour mapper les IDs et éviter les conflits d'identité
     const { data: cloudSpecies } = await supabase.from('rt_species').select('id, scientific_name').eq('user_id', user.id);
 
-    const mapMySpecies = (s) => {
-      const normName = normalizeSpeciesName(s.scientificName);
-      const cloudMatch = cloudSpecies?.find(cs => normalizeSpeciesName(cs.scientific_name) === normName);
-
-      const payload = {
-        user_id: user.id,
-        scientific_name: String(s.scientificName || '').trim().replace(/\s+/g, ' '),
-        common_name: s.commonName,
-        family: s.family,
-        subfamily: s.subfamily,
-        is_active: s.isActive,
-        is_custom: s.isCustom,
-        master_key: s.masterKey
-      };
-
-      // On n'envoie l'ID que si on a un match exact dans le Cloud (pour forcer l'UPDATE).
-      // Sinon, on laisse Supabase générer un nouvel ID (évite rt_species_pkey).
-      if (cloudMatch) {
-        payload.id = cloudMatch.id;
-      }
-
-      return payload;
-    };
-
     const mapDomotic = (d) => ({
       id: d.id,
       user_id: user.id,
@@ -507,49 +483,86 @@ export function AppProvider({ children }) {
     });
 
     try {
-      // Nettoyage Cloud existant
+      // 1. Nettoyage Cloud existant (sauf rt_species)
       const deleteResults = await Promise.all([
         supabase.from('rt_animals').delete().eq('user_id', user.id),
         supabase.from('rt_terrariums').delete().eq('user_id', user.id),
         supabase.from('rt_equipments').delete().eq('user_id', user.id),
         supabase.from('rt_foods').delete().eq('user_id', user.id),
         supabase.from('rt_domotics').delete().eq('user_id', user.id)
-        // Note: rt_species n'est pas supprimé pour préserver les contraintes d'intégrité
-        // L'upsert ci-dessous se chargera de mettre à jour les données existantes.
       ]);
 
       const deleteError = deleteResults.find(r => r.error)?.error;
       if (deleteError) {
-        console.warn("⚠️ Certains éléments n'ont pas pu être supprimés du cloud, tentative d'upsert...", deleteError);
+        console.warn("⚠️ Certains éléments n'ont pas pu être supprimés du cloud, tentative d'upload...", deleteError);
       }
 
-      // Préparation des espèces (normalisation et dédoublonnage pour éviter unique_species_per_user)
+      // 2. Gestion explicite de rt_species (Dédoublonnage + Update vs Insert)
       const seenNames = new Set();
-      const uniqueSpecies = mySpecies.filter(s => {
+      const uniqueLocalSpecies = mySpecies.filter(s => {
         const norm = normalizeSpeciesName(s.scientificName);
         if (!norm || seenNames.has(norm)) return false;
         seenNames.add(norm);
         return true;
       });
 
-      const speciesPayload = uniqueSpecies.map(mapMySpecies);
+      const speciesToUpdate = [];
+      const speciesToInsert = [];
+
+      uniqueLocalSpecies.forEach(s => {
+        const normName = normalizeSpeciesName(s.scientificName);
+        const cloudMatch = cloudSpecies?.find(cs => normalizeSpeciesName(cs.scientific_name) === normName);
+
+        const payload = {
+          user_id: user.id,
+          scientific_name: String(s.scientificName || '').trim().replace(/\s+/g, ' '),
+          common_name: s.commonName,
+          family: s.family,
+          subfamily: s.subfamily,
+          is_active: s.isActive,
+          is_custom: s.isCustom,
+          master_key: s.masterKey
+        };
+
+        if (cloudMatch) {
+          speciesToUpdate.push({ id: cloudMatch.id, payload });
+        } else {
+          speciesToInsert.push(payload);
+        }
+      });
+
       if (import.meta.env.DEV) {
-        console.log("DEBUG: rt_species payload", speciesPayload.map(p => ({ 
-          name: p.scientific_name, 
-          hasId: !!p.id, 
-          id: p.id,
-          isCustom: p.is_custom 
-        })));
+        console.log("DEBUG Species Sync:", {
+          localCount: mySpecies.length,
+          uniqueCount: uniqueLocalSpecies.length,
+          updateCount: speciesToUpdate.length,
+          insertCount: speciesToInsert.length,
+          insertPayloadsHaveId: speciesToInsert.some(p => !!p.id)
+        });
       }
 
-      // Upload groupé avec mapping
-      const results = await Promise.all([
+      // Opérations Species
+      const speciesUpdatePromises = speciesToUpdate.map(item => 
+        supabase.from('rt_species')
+          .update(item.payload)
+          .eq('id', item.id)
+          .eq('user_id', user.id)
+      );
+
+      const speciesInsertPromise = speciesToInsert.length > 0 
+        ? supabase.from('rt_species').insert(speciesToInsert)
+        : Promise.resolve({ error: null });
+
+      // 3. Upload du reste des tables
+      const otherUploadResults = await Promise.all([
         animals.length > 0 ? supabase.from('rt_animals').insert(animals.map(mapAnimal)) : Promise.resolve({ error: null }),
         terrariums.length > 0 ? supabase.from('rt_terrariums').insert(terrariums.map(mapTerrarium)) : Promise.resolve({ error: null }),
         equipments.length > 0 ? supabase.from('rt_equipments').insert(equipments.map(mapEquipment)) : Promise.resolve({ error: null }),
         foods.length > 0 ? supabase.from('rt_foods').insert(foods.map(mapFood)) : Promise.resolve({ error: null }),
         domotics.length > 0 ? supabase.from('rt_domotics').insert(domotics.map(mapDomotic)) : Promise.resolve({ error: null }),
-        speciesPayload.length > 0 ? supabase.from('rt_species').upsert(speciesPayload, { onConflict: 'user_id,scientific_name' }) : Promise.resolve({ error: null }),
+        // Exécution des mises à jour d'espèces en parallèle
+        ...speciesUpdatePromises,
+        speciesInsertPromise,
         supabase.from('rt_settings').upsert({
           user_id: user.id,
           kwh_price: settings.kwhPrice,
@@ -559,10 +572,12 @@ export function AppProvider({ children }) {
         })
       ]);
 
-      // Vérification des erreurs
-      const firstError = results.find(r => r.error)?.error;
+      // Vérification globale des erreurs
+      const firstError = otherUploadResults.find(r => r.error)?.error;
       if (firstError) {
-        console.error("❌ Erreur Supabase détectée:", firstError);
+        if (import.meta.env.DEV && firstError.code === '23505') {
+          console.error("DEBUG: Duplicate key error detected", firstError);
+        }
         throw firstError;
       }
 
