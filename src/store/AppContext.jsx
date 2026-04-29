@@ -474,8 +474,7 @@ export function AppProvider({ children }) {
       const normName = normalizeSpeciesName(s.scientificName);
       const cloudMatch = cloudSpecies?.find(cs => normalizeSpeciesName(cs.scientific_name) === normName);
 
-      return {
-        id: cloudMatch ? cloudMatch.id : s.id, // Priorité à l'ID Cloud pour forcer l'UPDATE si le nom a changé de casse
+      const payload = {
         user_id: user.id,
         scientific_name: String(s.scientificName || '').trim().replace(/\s+/g, ' '),
         common_name: s.commonName,
@@ -485,6 +484,14 @@ export function AppProvider({ children }) {
         is_custom: s.isCustom,
         master_key: s.masterKey
       };
+
+      // On n'envoie l'ID que si on a un match exact dans le Cloud (pour forcer l'UPDATE).
+      // Sinon, on laisse Supabase générer un nouvel ID (évite rt_species_pkey).
+      if (cloudMatch) {
+        payload.id = cloudMatch.id;
+      }
+
+      return payload;
     };
 
     const mapDomotic = (d) => ({
@@ -525,6 +532,16 @@ export function AppProvider({ children }) {
         return true;
       });
 
+      const speciesPayload = uniqueSpecies.map(mapMySpecies);
+      if (import.meta.env.DEV) {
+        console.log("DEBUG: rt_species payload", speciesPayload.map(p => ({ 
+          name: p.scientific_name, 
+          hasId: !!p.id, 
+          id: p.id,
+          isCustom: p.is_custom 
+        })));
+      }
+
       // Upload groupé avec mapping
       const results = await Promise.all([
         animals.length > 0 ? supabase.from('rt_animals').insert(animals.map(mapAnimal)) : Promise.resolve({ error: null }),
@@ -532,7 +549,7 @@ export function AppProvider({ children }) {
         equipments.length > 0 ? supabase.from('rt_equipments').insert(equipments.map(mapEquipment)) : Promise.resolve({ error: null }),
         foods.length > 0 ? supabase.from('rt_foods').insert(foods.map(mapFood)) : Promise.resolve({ error: null }),
         domotics.length > 0 ? supabase.from('rt_domotics').insert(domotics.map(mapDomotic)) : Promise.resolve({ error: null }),
-        uniqueSpecies.length > 0 ? supabase.from('rt_species').upsert(uniqueSpecies.map(mapMySpecies), { onConflict: 'user_id,scientific_name' }) : Promise.resolve({ error: null }),
+        speciesPayload.length > 0 ? supabase.from('rt_species').upsert(speciesPayload, { onConflict: 'user_id,scientific_name' }) : Promise.resolve({ error: null }),
         supabase.from('rt_settings').upsert({
           user_id: user.id,
           kwh_price: settings.kwhPrice,
