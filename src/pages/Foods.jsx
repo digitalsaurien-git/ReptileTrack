@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useAppContext } from '../store/AppContext';
-import { Plus, Drumstick, Trash2, Edit2, AlertTriangle, Euro, Calculator, Download, Settings, Snowflake } from 'lucide-react';
+import { Plus, Drumstick, Trash2, Edit2, AlertTriangle, Euro, Calculator, Download, Settings, Snowflake, Truck, Package, Users } from 'lucide-react';
 import { formatCurrency } from '../utils/costCalculator';
 import { sortAlphabetically } from '../utils/sortingUtils';
 
@@ -142,8 +142,10 @@ export function Foods() {
     
     // Calcul Transport & Box (HT -> TTC)
     const vatRate = (settings.planner_vat || 20) / 100;
-    const transportHT = settings.planner_transport || 0;
-    const boxHT = settings.planner_box || 0;
+    const participants = settings.planner_participants || 1;
+    
+    const transportHT = (settings.planner_transport || 0) / participants;
+    const boxHT = (settings.planner_box || 0) / participants;
     
     const transportTTC = transportHT * (1 + vatRate);
     const boxTTC = boxHT * (1 + vatRate);
@@ -154,9 +156,10 @@ export function Foods() {
       transportTTC,
       boxHT,
       boxTTC,
-      grandTotal: preySubtotalTTC + transportTTC + boxTTC
+      grandTotal: preySubtotalTTC + transportTTC + boxTTC,
+      participants
     };
-  }, [shoppingList, settings.planner_transport, settings.planner_box, settings.planner_vat]);
+  }, [shoppingList, settings.planner_transport, settings.planner_box, settings.planner_vat, settings.planner_participants]);
 
   const handleExport = () => {
     const headers = ['Type', 'Animaux', 'Besoin 3 mois', 'Stock', 'Max Congelo', 'A acheter', 'Arrondi', 'Prix Unit', 'Total TTC'];
@@ -176,9 +179,10 @@ export function Foods() {
       headers.join(';'),
       ...rows.map(r => r.join(';')),
       '',
-      `;;;;;;;Transport;${settings.planner_transport || 0}`,
-      `;;;;;;;Boîte;${settings.planner_box || 0}`,
-      `;;;;;;;TOTAL GLOBAL;${globalTotals.grandTotal.toFixed(2)}`
+      `;;;;;;;Participants;${globalTotals.participants}`,
+      `;;;;;;;Transport (part);${globalTotals.transportHT.toFixed(2)}`,
+      `;;;;;;;Boîte (part);${globalTotals.boxHT.toFixed(2)}`,
+      `;;;;;;;TOTAL PERSO TTC;${globalTotals.grandTotal.toFixed(2)}`
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -361,41 +365,79 @@ export function Foods() {
         <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           
           {/* Section 1: Réglages Globaux */}
-          <div className="glass-panel" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', padding: '1.5rem 2rem' }}>
+          <div className="glass-panel" style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', 
+            gap: '1rem', 
+            padding: '1.25rem' 
+          }}>
             <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Calculator size={14} /> Durée de commande (semaines)</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                <Calculator size={14} /> Durée (sem.)
+              </label>
               <input 
                 type="number" 
+                style={{ padding: '0.4rem 0.75rem' }}
                 value={settings.planner_duration} 
                 onChange={e => updateSetting('planner_duration', parseInt(e.target.value))} 
               />
             </div>
             <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Euro size={14} /> Taux TVA (%)</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                <Euro size={14} /> TVA (%)
+              </label>
               <input 
                 type="number" 
                 step="0.1"
+                style={{ padding: '0.4rem 0.75rem' }}
                 value={settings.planner_vat} 
                 onChange={e => updateSetting('planner_vat', parseFloat(e.target.value))} 
               />
             </div>
             <div>
-              <label>Frais de port (€ HT)</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                <Truck size={14} /> Port (€ HT)
+              </label>
               <input 
                 type="number" 
                 step="0.01"
+                style={{ padding: '0.4rem 0.75rem' }}
                 value={settings.planner_transport} 
                 onChange={e => updateSetting('planner_transport', parseFloat(e.target.value) || 0)} 
                 onFocus={e => e.target.select()}
               />
             </div>
             <div>
-              <label>Boîte Transport (€ HT)</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                <Package size={14} /> Boîte (€ HT)
+              </label>
               <input 
                 type="number" 
                 step="0.01"
+                style={{ padding: '0.4rem 0.75rem' }}
                 value={settings.planner_box} 
                 onChange={e => updateSetting('planner_box', parseFloat(e.target.value) || 0)} 
+                onFocus={e => e.target.select()}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                <Users size={14} /> Pers.
+              </label>
+              <input 
+                type="number" 
+                min="1"
+                step="1"
+                style={{ padding: '0.4rem 0.75rem' }}
+                value={settings.planner_participants || 1} 
+                onChange={e => {
+                  const val = parseInt(e.target.value);
+                  updateSetting('planner_participants', isNaN(val) || val < 1 ? 1 : val);
+                }}
+                onBlur={e => {
+                  const val = parseInt(e.target.value);
+                  if (isNaN(val) || val < 1) updateSetting('planner_participants', 1);
+                }}
                 onFocus={e => e.target.select()}
               />
             </div>
@@ -497,11 +539,11 @@ export function Foods() {
                     <span>{formatCurrency(globalTotals.preyTTC)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
-                    <span>Boîte polystyrène (TTC):</span>
+                    <span>Boîte polystyrène (TTC) {globalTotals.participants > 1 ? `(1/${globalTotals.participants})` : ''}:</span>
                     <span>{formatCurrency(globalTotals.boxTTC)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
-                    <span>Transport (TTC):</span>
+                    <span>Transport (TTC) {globalTotals.participants > 1 ? `(1/${globalTotals.participants})` : ''}:</span>
                     <span>{formatCurrency(globalTotals.transportTTC)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)', marginTop: '0.5rem' }}>

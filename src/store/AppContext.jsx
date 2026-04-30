@@ -95,7 +95,8 @@ const mapSettingsFromRemote = (s, currentSettings) => ({
   planner_duration: s.planner_duration || 13,
   planner_vat: s.planner_vat || 20.0,
   planner_transport: s.planner_transport || 0.0,
-  planner_box: s.planner_box || 0.0
+  planner_box: s.planner_box || 0.0,
+  planner_participants: s.planner_participants || 1
 });
 
 export function AppProvider({ children }) {
@@ -114,7 +115,8 @@ export function AppProvider({ children }) {
     planner_duration: 13,
     planner_vat: 20.0,
     planner_transport: 0.0,
-    planner_box: 0.0
+    planner_box: 0.0,
+    planner_participants: 1
   });
   const [googleSyncEnabled, setGoogleSyncEnabled] = useLocalStorage("reptiltrack_google_sync", false);
   const [googleDriveReady, setGoogleDriveReady] = useState(false);
@@ -568,7 +570,12 @@ export function AppProvider({ children }) {
           kwh_price: settings.kwhPrice,
           theme: theme,
           webhook_url: localStorage.getItem('reptiltrack_webhook_url'),
-          is_linked_with_cloud: true
+          is_linked_with_cloud: true,
+          planner_duration: settings.planner_duration,
+          planner_vat: settings.planner_vat,
+          planner_transport: settings.planner_transport,
+          planner_box: settings.planner_box,
+          planner_participants: Math.max(1, parseInt(settings.planner_participants) || 1)
         })
       ]);
 
