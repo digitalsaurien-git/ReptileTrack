@@ -168,10 +168,10 @@ export function AppProvider({ children }) {
     });
   };
 
-  const loginWithEmail = async (email) => {
-    const { error } = await supabase.auth.signInWithOtp({
+  const loginWithEmail = async (email, password) => {
+    const { error } = await supabase.auth.signInWithPassword({
       email,
-      options: { emailRedirectTo: getRedirectUrl() }
+      password
     });
     return { error };
   };

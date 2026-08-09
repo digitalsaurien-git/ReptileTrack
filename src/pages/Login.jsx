@@ -1,22 +1,23 @@
 import { useState } from "react";
 import { useAppContext } from "../store/AppContext";
 import { Snake } from "../components/icons/Snake";
-import { LogIn, Mail, Loader2 } from "lucide-react";
+import { LogIn, Mail, LockKeyhole, Loader2 } from "lucide-react";
 
 export function Login() {
   const { loginWithGoogle, loginWithEmail, theme, setIsGuest } = useAppContext();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await loginWithEmail(email);
+    const { error } = await loginWithEmail(email, password);
     if (error) {
       setMessage({ type: 'error', text: error.message });
     } else {
-      setMessage({ type: 'success', text: "Lien envoyé ! Vérifiez votre boîte mail (pensez aux spams)." });
+      setMessage({ type: 'success', text: "Connexion réussie." });
     }
     setLoading(false);
   };
@@ -56,13 +57,26 @@ export function Login() {
               style={{ paddingLeft: '3rem' }}
             />
           </div>
+          <label>Mot de passe</label>
+          <div style={{ position: 'relative', marginBottom: '1rem' }}>
+            <LockKeyhole size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Votre mot de passe"
+              autoComplete="current-password"
+              style={{ paddingLeft: '3rem' }}
+            />
+          </div>
           <button 
             disabled={loading}
             className="btn btn-primary" 
             style={{ width: '100%', gap: '0.75rem' }}
           >
             {loading ? <Loader2 className="animate-spin" /> : <Mail size={18} />}
-            M'envoyer un lien magique
+            Se connecter
           </button>
         </form>
 
