@@ -73,6 +73,9 @@
   flex-direction: column;
   padding: 3rem 2rem;
   z-index: 100;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
 }
 
 /* ... unchanged ... */

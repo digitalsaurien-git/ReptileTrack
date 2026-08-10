@@ -16,6 +16,38 @@ const normalizeSpeciesName = (name) => {
     .replace(/\s+/g, " ");
 };
 
+const canonicalizeJson = (value) => {
+  if (Array.isArray(value)) return value.map(canonicalizeJson);
+  if (value && typeof value === "object") {
+    return Object.keys(value)
+      .sort()
+      .reduce((result, key) => {
+        result[key] = canonicalizeJson(value[key]);
+        return result;
+      }, {});
+  }
+  return value;
+};
+
+const sameJson = (left, right) => (
+  JSON.stringify(canonicalizeJson(left)) === JSON.stringify(canonicalizeJson(right))
+);
+
+const assertNoError = (response, label) => {
+  if (response?.error) {
+    throw new Error(`${label} : ${response.error.message || "erreur Supabase"}`);
+  }
+  return response?.data;
+};
+
+const assertSameIds = (label, expectedRows, remoteRows) => {
+  const expectedIds = [...new Set(expectedRows.map(row => row.id))].sort();
+  const remoteIds = [...new Set((remoteRows || []).map(row => row.id))].sort();
+  if (!sameJson(expectedIds, remoteIds)) {
+    throw new Error(`${label} : la vérification Cloud ne retrouve pas les mêmes éléments.`);
+  }
+};
+
 const mapAnimalFromRemote = (a) => ({
   ...a,
   commonName: a.common_name,
@@ -189,23 +221,19 @@ export function AppProvider({ children }) {
     setCloudStatus('checking');
 
     try {
-      const [
-        { data: anims },
-        { data: terrs },
-        { data: equs },
-        { data: fds },
-        { data: doms },
-        { data: sets },
-        { data: spcs }
-      ] = await Promise.all([
-        supabase.from('rt_animals').select('*'),
-        supabase.from('rt_terrariums').select('*'),
-        supabase.from('rt_equipments').select('*'),
-        supabase.from('rt_foods').select('*'),
-        supabase.from('rt_domotics').select('*'),
-        supabase.from('rt_settings').select('*').maybeSingle(),
-        supabase.from('rt_species').select('*')
+      const responses = await Promise.all([
+        supabase.from('rt_animals').select('*').eq('user_id', user.id),
+        supabase.from('rt_terrariums').select('*').eq('user_id', user.id),
+        supabase.from('rt_equipments').select('*').eq('user_id', user.id),
+        supabase.from('rt_foods').select('*').eq('user_id', user.id),
+        supabase.from('rt_domotics').select('*').eq('user_id', user.id),
+        supabase.from('rt_settings').select('*').eq('user_id', user.id).maybeSingle(),
+        supabase.from('rt_species').select('*').eq('user_id', user.id)
       ]);
+
+      const labels = ['animaux', 'terrariums', 'matériel', 'nourriture', 'domotique', 'paramètres', 'espèces'];
+      responses.forEach((response, index) => assertNoError(response, `Lecture des ${labels[index]}`));
+      const [anims, terrs, equs, fds, doms, sets, spcs] = responses.map(response => response.data);
 
       const hasRemoteData = (anims?.length > 0 || terrs?.length > 0 || equs?.length > 0 || fds?.length > 0 || doms?.length > 0 || spcs?.length > 0);
       const hasLocalData = (animals.length > 0 || terrariums.length > 0 || equipments.length > 0 || foods.length > 0 || domotics.length > 0 || mySpecies.length > 0);
@@ -353,16 +381,16 @@ export function AppProvider({ children }) {
         { data: sets, error: e6 },
         { data: spcs, error: e7 }
       ] = await Promise.all([
-        supabase.from('rt_animals').select('*'),
-        supabase.from('rt_terrariums').select('*'),
-        supabase.from('rt_equipments').select('*'),
-        supabase.from('rt_foods').select('*'),
-        supabase.from('rt_domotics').select('*'),
-        supabase.from('rt_settings').select('*').maybeSingle(),
-        supabase.from('rt_species').select('*')
+        supabase.from('rt_animals').select('*').eq('user_id', user.id),
+        supabase.from('rt_terrariums').select('*').eq('user_id', user.id),
+        supabase.from('rt_equipments').select('*').eq('user_id', user.id),
+        supabase.from('rt_foods').select('*').eq('user_id', user.id),
+        supabase.from('rt_domotics').select('*').eq('user_id', user.id),
+        supabase.from('rt_settings').select('*').eq('user_id', user.id).maybeSingle(),
+        supabase.from('rt_species').select('*').eq('user_id', user.id)
       ]);
 
-      if (e1 || e2 || e3 || e4 || e5 || e7) {
+      if (e1 || e2 || e3 || e4 || e5 || e6 || e7) {
         throw new Error("Une ou plusieurs tables n'ont pas pu être récupérées.");
       }
 
@@ -469,9 +497,6 @@ export function AppProvider({ children }) {
       max_freezer: f.maxFreezer || 0
     });
 
-    // Récupération des espèces cloud actuelles pour mapper les IDs et éviter les conflits d'identité
-    const { data: cloudSpecies } = await supabase.from('rt_species').select('id, scientific_name').eq('user_id', user.id);
-
     const mapDomotic = (d) => ({
       id: d.id,
       user_id: user.id,
@@ -485,21 +510,17 @@ export function AppProvider({ children }) {
     });
 
     try {
-      // 1. Nettoyage Cloud existant (sauf rt_species)
-      const deleteResults = await Promise.all([
-        supabase.from('rt_animals').delete().eq('user_id', user.id),
-        supabase.from('rt_terrariums').delete().eq('user_id', user.id),
-        supabase.from('rt_equipments').delete().eq('user_id', user.id),
-        supabase.from('rt_foods').delete().eq('user_id', user.id),
-        supabase.from('rt_domotics').delete().eq('user_id', user.id)
-      ]);
-
-      const deleteError = deleteResults.find(r => r.error)?.error;
-      if (deleteError) {
-        console.warn("⚠️ Certains éléments n'ont pas pu être supprimés du cloud, tentative d'upload...", deleteError);
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || authData?.user?.id !== user.id) {
+        throw new Error("La session a expiré. Reconnectez-vous avant de synchroniser.");
       }
 
-      // 2. Gestion explicite de rt_species (Dédoublonnage + Update vs Insert)
+      const cloudSpecies = assertNoError(
+        await supabase.from('rt_species').select('id, scientific_name').eq('user_id', user.id),
+        "Lecture des espèces"
+      );
+
+      // Gestion explicite de rt_species (dédoublonnage + Update vs Insert)
       const seenNames = new Set();
       const uniqueLocalSpecies = mySpecies.filter(s => {
         const norm = normalizeSpeciesName(s.scientificName);
@@ -549,23 +570,39 @@ export function AppProvider({ children }) {
           .update(item.payload)
           .eq('id', item.id)
           .eq('user_id', user.id)
+          .select('id')
       );
 
       const speciesInsertPromise = speciesToInsert.length > 0 
-        ? supabase.from('rt_species').insert(speciesToInsert)
-        : Promise.resolve({ error: null });
+        ? supabase.from('rt_species').insert(speciesToInsert).select('id')
+        : Promise.resolve({ data: [], error: null });
 
-      // 3. Upload du reste des tables
-      const otherUploadResults = await Promise.all([
-        animals.length > 0 ? supabase.from('rt_animals').insert(animals.map(mapAnimal)) : Promise.resolve({ error: null }),
-        terrariums.length > 0 ? supabase.from('rt_terrariums').insert(terrariums.map(mapTerrarium)) : Promise.resolve({ error: null }),
-        equipments.length > 0 ? supabase.from('rt_equipments').insert(equipments.map(mapEquipment)) : Promise.resolve({ error: null }),
-        foods.length > 0 ? supabase.from('rt_foods').insert(foods.map(mapFood)) : Promise.resolve({ error: null }),
-        domotics.length > 0 ? supabase.from('rt_domotics').insert(domotics.map(mapDomotic)) : Promise.resolve({ error: null }),
-        // Exécution des mises à jour d'espèces en parallèle
-        ...speciesUpdatePromises,
-        speciesInsertPromise,
-        supabase.from('rt_settings').upsert({
+      const speciesResults = await Promise.all([...speciesUpdatePromises, speciesInsertPromise]);
+      speciesResults.forEach((response, index) => assertNoError(response, `Écriture des espèces (${index + 1})`));
+
+      const tableSnapshots = [
+        { table: 'rt_terrariums', label: 'terrariums', rows: terrariums.map(mapTerrarium) },
+        { table: 'rt_foods', label: 'nourriture', rows: foods.map(mapFood) },
+        { table: 'rt_domotics', label: 'domotique', rows: domotics.map(mapDomotic) },
+        { table: 'rt_equipments', label: 'matériel', rows: equipments.map(mapEquipment) },
+        { table: 'rt_animals', label: 'animaux', rows: animals.map(mapAnimal) }
+      ];
+
+      // On écrit d'abord la nouvelle version. L'ancienne reste récupérable si une écriture échoue.
+      for (const snapshot of tableSnapshots) {
+        if (snapshot.rows.length === 0) continue;
+        const response = await supabase
+          .from(snapshot.table)
+          .upsert(snapshot.rows, { onConflict: 'id' })
+          .select('id');
+        const writtenRows = assertNoError(response, `Écriture des ${snapshot.label}`) || [];
+        if (writtenRows.length !== snapshot.rows.length) {
+          throw new Error(`Écriture des ${snapshot.label} : ${writtenRows.length}/${snapshot.rows.length} éléments confirmés.`);
+        }
+      }
+
+      assertNoError(
+        await supabase.from('rt_settings').upsert({
           user_id: user.id,
           kwh_price: settings.kwhPrice,
           theme: theme,
@@ -576,21 +613,51 @@ export function AppProvider({ children }) {
           planner_transport: settings.planner_transport,
           planner_box: settings.planner_box,
           planner_participants: Math.max(1, parseInt(settings.planner_participants) || 1)
-        })
-      ]);
+        }).select('user_id'),
+        "Écriture des paramètres"
+      );
 
-      // Vérification globale des erreurs
-      const firstError = otherUploadResults.find(r => r.error)?.error;
-      if (firstError) {
-        if (import.meta.env.DEV && firstError.code === '23505') {
-          console.error("DEBUG: Duplicate key error detected", firstError);
+      // Une fois les écritures confirmées, on enlève seulement les anciennes lignes absentes du local.
+      for (const snapshot of [...tableSnapshots].reverse()) {
+        const cloudRows = assertNoError(
+          await supabase.from(snapshot.table).select('id').eq('user_id', user.id),
+          `Contrôle des ${snapshot.label}`
+        ) || [];
+        const expectedIds = new Set(snapshot.rows.map(row => row.id));
+        const staleIds = cloudRows.map(row => row.id).filter(id => !expectedIds.has(id));
+        if (staleIds.length > 0) {
+          const deletedRows = assertNoError(
+            await supabase.from(snapshot.table).delete().eq('user_id', user.id).in('id', staleIds).select('id'),
+            `Nettoyage des ${snapshot.label}`
+          ) || [];
+          if (deletedRows.length !== staleIds.length) {
+            throw new Error(`Nettoyage des ${snapshot.label} incomplet (${deletedRows.length}/${staleIds.length}).`);
+          }
         }
-        throw firstError;
       }
 
-      console.log("✅ Synchronisation réussie !");
+      // Relecture obligatoire : le succès n'est annoncé que si le Cloud contient la version locale.
+      const verificationResponses = await Promise.all(tableSnapshots.map(snapshot => (
+        supabase.from(snapshot.table).select('*').eq('user_id', user.id)
+      )));
+
+      verificationResponses.forEach((response, index) => {
+        assertNoError(response, `Vérification des ${tableSnapshots[index].label}`);
+        assertSameIds(tableSnapshots[index].label, tableSnapshots[index].rows, response.data || []);
+      });
+
+      const remoteAnimals = verificationResponses[4].data || [];
+      const remoteAnimalsById = new Map(remoteAnimals.map(animal => [animal.id, animal]));
+      for (const localAnimal of tableSnapshots[4].rows) {
+        const remoteAnimal = remoteAnimalsById.get(localAnimal.id);
+        if (!remoteAnimal || !sameJson(localAnimal.history || [], remoteAnimal.history || [])) {
+          throw new Error(`Historique non confirmé pour ${localAnimal.nickname || localAnimal.common_name || localAnimal.id}.`);
+        }
+      }
+
+      setLastSync(new Date().toISOString());
       setCloudStatus('synced');
-      alert("✅ Données locales synchronisées sur le Cloud !");
+      alert(`✅ Sauvegarde Cloud vérifiée : ${animals.length} animaux et leurs historiques ont bien été relus.`);
     } catch (err) {
       console.error("❌ Échec de la synchronisation:", err);
       alert(`❌ Échec de la synchronisation: ${err.message || "Erreur inconnue"}`);
