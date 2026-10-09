@@ -6,6 +6,7 @@ import { Snake } from '../components/icons/Snake' ;
 import { getPlaceholderImage } from '../utils/imageUtils';
 import { speciesList } from '../data/species';
 import { sortAlphabetically } from '../utils/sortingUtils';
+import { feedingLabels, getFeedingSchedule, localDateKey } from '../utils/feedingSchedule';
 
 export function Animals() {
   const { animals, setAnimals, foods, setFoods } = useAppContext();
@@ -44,6 +45,8 @@ export function Animals() {
 
   const handleQuickFeed = async (animal, e) => {
     e.stopPropagation();
+    const schedule = getFeedingSchedule(animal);
+    if (schedule.inWinter || schedule.inShed) return;
     
     if (!animal.defaultFoodId || !animal.defaultFoodQuantity) {
       alert("⚠️ Veuillez configurer la proie habituelle de cet animal dans sa fiche détaillée pour utiliser cette fonction.");
@@ -74,7 +77,7 @@ export function Animals() {
       }
     }
 
-    const newHistoryEvent = { id: crypto.randomUUID(), type: 'repas', date: new Date().toISOString().split('T')[0], foodId: selectedFood.id, foodName: selectedFood.name, quantity: animal.defaultFoodQuantity, notes: "Nourrissage rapide depuis la liste" };
+    const newHistoryEvent = { id: crypto.randomUUID(), type: 'repas', date: localDateKey(), foodId: selectedFood.id, foodName: selectedFood.name, quantity: animal.defaultFoodQuantity, notes: "Nourrissage rapide depuis la liste" };
     const newAnimal = { ...animal, history: [newHistoryEvent, ...(animal.history || [])] };
     const updatedList = animals.map(a => a.id === animal.id ? newAnimal : a);
     setAnimals(updatedList);
@@ -207,10 +210,12 @@ export function Animals() {
                   className="btn btn-secondary" 
                   onClick={(e) => handleQuickFeed(animal, e)}
                   style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderColor: 'rgba(255, 107, 0, 0.4)', color: '#ff6b00', background: 'rgba(255, 107, 0, 0.05)' }}
-                  title="Nourrir cet animal"
+                  aria-label={feedingLabels(animal).fed}
+                  title={getFeedingSchedule(animal).inWinter ? 'En hivernage : repas suspendus' : getFeedingSchedule(animal).inShed ? 'En mue : repas suspendus' : feedingLabels(animal).fed}
+                  disabled={getFeedingSchedule(animal).inWinter || getFeedingSchedule(animal).inShed}
                 >
                   <Utensils size={15} /> 
-                  <span className="hide-mobile">Il a mangé !</span>
+                  <span className="hide-mobile">{feedingLabels(animal).fed}</span>
                 </button>
                 <ChevronRight size={20} color="var(--primary)" opacity={0.6} />
               </div>

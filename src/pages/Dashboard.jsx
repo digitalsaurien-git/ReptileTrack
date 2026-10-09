@@ -5,6 +5,7 @@ import { Snake } from '../components/icons/Snake';
 import { useNavigate } from 'react-router-dom';
 import { speciesList } from '../data/species';
 import { sortAlphabetically } from '../utils/sortingUtils';
+import { getFeedingSchedule, CARE_EVENT_LABELS } from '../utils/feedingSchedule';
 
 export function Dashboard() {
   const { animals, terrariums, equipments, settings } = useAppContext();
@@ -12,23 +13,12 @@ export function Dashboard() {
 
   const totalCostDay = equipments.reduce((sum, e) => sum + calculateDailyCost(e.watts, e.hoursPerDay, settings.kwhPrice), 0);
   
-  const animalsToFeed = animals.filter(a => {
-    if (!a.feedingFrequency) return false;
-    const lastMeal = (a.history || []).find(e => e.type === 'repas');
-    if (!lastMeal) return true; // Jamais nourri dans l'appli mais a une fréquence -> à nourrir
-    
-    const nextDate = new Date(lastMeal.date);
-    nextDate.setDate(nextDate.getDate() + parseInt(a.feedingFrequency));
-    nextDate.setHours(0,0,0,0);
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    return today >= nextDate;
-  });
+  const animalsToFeed = animals.filter(a => getFeedingSchedule(a).due);
 
   const sortedAnimalsToFeed = sortAlphabetically(animalsToFeed, a => a.nickname || a.commonName || '');
 
   const allEvents = animals.flatMap(a => 
-    (a.history || []).map(event => ({ ...event, animalName: a.commonName || 'Inconnu', animalId: a.id }))
+    (a.history || []).map(event => ({ ...event, animalName: a.nickname || a.commonName || 'Inconnu', animalId: a.id }))
   ).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 6);
 
   const familyDistribution = animals.reduce((acc, curr) => {
@@ -179,7 +169,7 @@ export function Dashboard() {
               >
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                    <span className="badge" style={{ background: 'var(--bg-dark)', color: 'var(--primary)', border: '1px solid var(--primary-glow)' }}>{event.type}</span>
+                    <span className="badge" style={{ background: 'var(--bg-dark)', color: 'var(--primary)', border: '1px solid var(--primary-glow)' }}>{CARE_EVENT_LABELS[event.type] || event.type}</span>
                     <strong style={{ color: 'var(--text-bright)' }}>{event.animalName}</strong>
                   </div>
                   {event.notes && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{event.notes}</p>}

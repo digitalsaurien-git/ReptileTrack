@@ -20,6 +20,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { sortAlphabetically } from '../utils/sortingUtils';
+import { getFeedingSchedule, feedingLabels, createCareEvent, localDateKey, formatCareDate, CARE_EVENT_LABELS } from '../utils/feedingSchedule';
 
 ChartJS.register(
   CategoryScale,
@@ -46,14 +47,14 @@ export function AnimalDetail() {
   const [activeTab, setActiveTab] = useState('infos');
   const [newEvent, setNewEvent] = useState({ 
     type: 'repas', 
-    date: new Date().toISOString().split('T')[0], 
+    date: localDateKey(),
     notes: '', 
     foodId: '', 
     quantity: 1, 
     weight: '', 
     weightUnit: 'g' 
   });
-  const [newDoc, setNewDoc] = useState({ name: '', type: 'facture', date: new Date().toISOString().split('T')[0], ref: '' });
+  const [newDoc, setNewDoc] = useState({ name: '', type: 'facture', date: localDateKey(), ref: '' });
 
   const [isSending, setIsSending] = useState(false);
 
@@ -85,12 +86,19 @@ export function AnimalDetail() {
   const handleAddEvent = async (e) => {
     e.preventDefault();
     if (!newEvent.date || !newEvent.type) return;
+    if (newEvent.type === 'refus_repas' && !getFeedingSchedule(animal).configured) {
+      alert('Renseigne la fréquence des repas dans Identité avant de noter un refus.');
+      return;
+    }
     
     const isUpdate = !!newEvent.id;
     let historyEvent = { ...newEvent };
     
     if (!isUpdate) {
       historyEvent.id = crypto.randomUUID();
+    }
+    if (CARE_EVENT_LABELS[newEvent.type] && !newEvent.notes) {
+      historyEvent.notes = createCareEvent(animal, newEvent.type, newEvent.date).notes;
     }
 
     // Gestion du repas et des stocks (simplifiée pour l'ajout/update)
@@ -120,15 +128,14 @@ export function AnimalDetail() {
       ? animal.history.map(ev => ev.id === historyEvent.id ? historyEvent : ev)
       : [historyEvent, ...(animal.history || [])];
 
-    setAnimal({
-      ...animal,
-      history: updatedHistory
-    });
+    const updatedAnimal = { ...animal, history: updatedHistory };
+    setAnimal(updatedAnimal);
+    setAnimals(current => current.map(a => a.id === id ? updatedAnimal : a));
 
     // Reset du formulaire
     setNewEvent({ 
       type: 'repas', 
-      date: new Date().toISOString().split('T')[0], 
+      date: localDateKey(),
       notes: '', 
       foodId: '', 
       quantity: 1, 
@@ -145,7 +152,7 @@ export function AnimalDetail() {
       ...animal,
       documents: [doc, ...(animal.documents || [])]
     });
-    setNewDoc({ name: '', type: 'facture', date: new Date().toISOString().split('T')[0], ref: '' });
+    setNewDoc({ name: '', type: 'facture', date: localDateKey(), ref: '' });
   };
   
   const handleDeleteEvent = (eventId) => {
@@ -230,15 +237,20 @@ export function AnimalDetail() {
     }
   };
 
-  const lastMealEvent = animal?.history?.find(e => e.type === 'repas');
-  const lastMealDate = lastMealEvent ? new Date(lastMealEvent.date) : null;
-  let nextMealDate = null;
-  if (lastMealDate && animal?.feedingFrequency) {
-    nextMealDate = new Date(lastMealDate);
-    nextMealDate.setDate(nextMealDate.getDate() + parseInt(animal.feedingFrequency));
-  }
+  const schedule = getFeedingSchedule(animal);
+  const labels = feedingLabels(animal);
+  const lastMealDate = schedule.lastMeal ? new Date(`${schedule.lastMeal.date.slice(0, 10)}T12:00:00`) : null;
+
+  const handleCareAction = (type) => {
+    if (type === 'refus_repas' && !schedule.configured) return;
+    const event = createCareEvent(animal, type);
+    const updatedAnimal = { ...animal, history: [event, ...(animal.history || [])] };
+    setAnimal(updatedAnimal);
+    setAnimals(current => current.map(a => a.id === id ? updatedAnimal : a));
+  };
 
   const handleFeedNow = async () => {
+    if (schedule.inWinter || schedule.inShed) return;
     if (!animal.defaultFoodId) {
       alert("⚠️ Veuillez configurer la proie habituelle de cet animal (onglet Identité) pour utiliser cette fonction.");
       return;
@@ -283,7 +295,7 @@ export function AnimalDetail() {
     const newHistoryEvent = {
       id: crypto.randomUUID(),
       type: 'repas',
-      date: new Date().toISOString().split('T')[0],
+      date: localDateKey(),
       foodId: selectedFood.id,
       foodName: selectedFood.name,
       quantity: feedQuantity,
@@ -314,6 +326,10 @@ export function AnimalDetail() {
         <div style={{ flex: 1, textAlign: 'center', minWidth: '200px' }}>
           <h1 style={{ fontSize: '2rem', margin: 0 }}>{animal.commonName || 'Specimen'} {animal.nickname ? `"${animal.nickname}"` : ''}</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Fiche détaillée de l'animal</p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+            {schedule.inShed && <span className="badge">En mue jusqu’au {formatCareDate(schedule.shedUntil)}</span>}
+            {schedule.inWinter && <span className="badge">En hivernage jusqu’au {formatCareDate(schedule.winterUntil)}</span>}
+          </div>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <button 
@@ -357,19 +373,35 @@ export function AnimalDetail() {
         ))}
       </div>
 
-      <div className="no-print" style={{ marginBottom: '2rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: '300px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(78, 222, 163, 0.05)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(78, 222, 163, 0.2)' }}>
+      <div className="no-print glass-panel" style={{ marginBottom: '2rem', padding: '1.5rem' }}>
+        <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
           <div>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.25rem' }}>Dernier Repas</div>
-            <div style={{ fontWeight: 600, color: lastMealDate ? 'var(--text-bright)' : 'var(--warning)', fontSize: '1.1rem' }}>
-              {lastMealDate ? lastMealDate.toLocaleDateString() : 'Non enregistré'}
+            <div style={{ color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Dernier repas pris</div>
+            <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>
+              {lastMealDate ? lastMealDate.toLocaleDateString('fr-FR') : 'Non enregistré'}
             </div>
-            {animal.feedingFrequency && <div style={{ fontSize: '0.8rem', color: 'var(--primary)', marginTop: '0.25rem' }}>
-              Prochain prévu le: {nextMealDate ? nextMealDate.toLocaleDateString() : 'N/A'}
-            </div>}
+            <div style={{ color: 'var(--primary)', marginTop: '0.5rem' }} role="status">
+              {schedule.inWinter || schedule.inShed ? 'Relances suspendues. ' : ''}
+              {schedule.configured
+                ? schedule.nextDate ? `Prochain repas proposé le ${formatCareDate(schedule.nextDate)}` : 'Repas à proposer'
+                : 'Renseigne la fréquence des repas dans Identité.'}
+            </div>
           </div>
-          <button onClick={handleFeedNow} className="btn btn-primary" style={{ padding: '0.75rem 1.5rem', fontWeight: 700, fontSize: '1.1rem' }}>
-            🍖 IL A MANGÉ !
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button onClick={handleFeedNow} disabled={schedule.inWinter || schedule.inShed} className="btn btn-primary">
+              🍖 {labels.fed}
+            </button>
+            <button onClick={() => handleCareAction('refus_repas')} disabled={!schedule.configured || schedule.inWinter || schedule.inShed} className="btn btn-secondary">
+              {labels.refused}
+            </button>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '1rem' }}>
+          <button className="btn btn-secondary" onClick={() => handleCareAction('debut_mue')} disabled={schedule.inShed}>
+            En mue · 14 jours
+          </button>
+          <button className="btn btn-secondary" onClick={() => handleCareAction(schedule.inWinter ? 'fin_hivernage' : 'debut_hivernage')} aria-pressed={schedule.inWinter}>
+            {schedule.inWinter ? 'Terminer l’hivernage' : 'En hivernage · 90 jours'}
           </button>
         </div>
       </div>
@@ -766,6 +798,10 @@ export function AnimalDetail() {
                 <label>Type d'intervention</label>
                 <select value={newEvent.type} onChange={e => setNewEvent({...newEvent, type: e.target.value})}>
                   <option value="repas">🍖 Repas / Nourrissage</option>
+                  <option value="refus_repas">Repas refusé</option>
+                  <option value="debut_mue">Début de mue · pause de 14 jours</option>
+                  <option value="debut_hivernage">Début d’hivernage · pause de 90 jours</option>
+                  <option value="fin_hivernage">Fin d’hivernage</option>
                   <option value="mue">🐍 Mue / Exuviation</option>
                   <option value="pesée">⚖️ Pesée / Morphométrie</option>
                   <option value="maladie">💊 Traitement / Santé</option>
@@ -863,14 +899,16 @@ export function AnimalDetail() {
                       flexShrink: 0
                     }}>
                       {item.type === 'repas' && '🍖'}
-                      {item.type === 'mue' && '🐍'}
+                      {(item.type === 'mue' || item.type === 'debut_mue') && '🐍'}
+                      {item.type === 'refus_repas' && '🍽️'}
+                      {(item.type === 'debut_hivernage' || item.type === 'fin_hivernage') && '❄️'}
                       {item.type === 'pesée' && '⚖️'}
                       {item.type === 'maladie' && '💊'}
                       {item.type === 'autre' && '📝'}
                     </div>
                     <div className="glass-card" style={{ flex: 1, padding: '1.25rem', cursor: 'default' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                        <span className="badge" style={{ background: 'rgba(78, 222, 163, 0.1)', color: 'var(--primary)' }}>{item.type}</span>
+                        <span className="badge" style={{ background: 'rgba(78, 222, 163, 0.1)', color: 'var(--primary)' }}>{CARE_EVENT_LABELS[item.type] || item.type}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                             <Calendar size={12} /> {new Date(item.date).toLocaleDateString()}
