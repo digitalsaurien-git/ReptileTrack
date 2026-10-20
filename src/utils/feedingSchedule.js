@@ -37,6 +37,7 @@ export function getFeedingSchedule(animal, today = localDateKey()) {
   const frequency = Number(animal.feedingFrequency);
   const configured = Number.isInteger(frequency) && frequency > 0;
   const lastMeal = history.find(event => event.type === 'repas');
+  const lastRefusal = history.find(event => event.type === 'refus_repas');
   const lastSchedulingEvent = history.find(event => ['repas', 'refus_repas', 'debut_mue', 'debut_hivernage', 'fin_hivernage'].includes(event.type));
   let nextDate = null;
   if (lastSchedulingEvent?.type === 'debut_mue') nextDate = addDays(dayOf(lastSchedulingEvent), 14);
@@ -59,7 +60,7 @@ export function getFeedingSchedule(animal, today = localDateKey()) {
   const inWinter = !!winterUntil && today < winterUntil;
   const active = !animal.status || animal.status === 'vivant' || animal.status === 'malade';
   return {
-    configured, lastMeal, nextDate, inShed, inWinter, shedUntil, winterUntil,
+    configured, lastMeal, lastRefusal, nextDate, inShed, inWinter, shedUntil, winterUntil,
     due: active && configured && !inShed && !inWinter && (!nextDate || today >= nextDate)
   };
 }

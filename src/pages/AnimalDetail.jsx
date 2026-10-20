@@ -239,7 +239,6 @@ export function AnimalDetail() {
 
   const schedule = getFeedingSchedule(animal);
   const labels = feedingLabels(animal);
-  const lastMealDate = schedule.lastMeal ? new Date(`${schedule.lastMeal.date.slice(0, 10)}T12:00:00`) : null;
 
   const handleCareAction = (type) => {
     if (type === 'refus_repas' && !schedule.configured) return;
@@ -376,9 +375,19 @@ export function AnimalDetail() {
       <div className="no-print glass-panel" style={{ marginBottom: '2rem', padding: '1.5rem' }}>
         <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
           <div>
-            <div style={{ color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Dernier repas pris</div>
-            <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>
-              {lastMealDate ? lastMealDate.toLocaleDateString('fr-FR') : 'Non enregistré'}
+            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Dernier repas pris</div>
+                <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>
+                  {schedule.lastMeal ? formatCareDate(schedule.lastMeal.date.slice(0, 10)) : 'Non enregistré'}
+                </div>
+              </div>
+              <div>
+                <div style={{ color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Dernier repas refusé</div>
+                <div style={{ fontWeight: 600, fontSize: '1.1rem' }} aria-live="polite">
+                  {schedule.lastRefusal ? formatCareDate(schedule.lastRefusal.date.slice(0, 10)) : 'Non enregistré'}
+                </div>
+              </div>
             </div>
             <div style={{ color: 'var(--primary)', marginTop: '0.5rem' }} role="status">
               {schedule.inWinter || schedule.inShed ? 'Relances suspendues. ' : ''}

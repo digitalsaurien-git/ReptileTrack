@@ -24,6 +24,40 @@ test('refusal resets the reminder by the configured interval but preserves the l
   }
 });
 
+test('meal and refusal dates survive saving for every sex, including missing and indeterminate', () => {
+  for (const sex of [undefined, null, '', 'inconnu', 'indéterminé', 'male', 'femelle']) {
+    for (const frequency of [7, 14]) {
+      const a = { sex, feedingFrequency: frequency, history: [event('repas', '2026-10-01')] };
+      const refusal = createCareEvent(a, 'refus_repas', '2026-10-09');
+      a.history.unshift(refusal);
+      const saved = JSON.parse(JSON.stringify(a));
+      const schedule = getFeedingSchedule(saved, '2026-10-09');
+      assert.equal(schedule.lastRefusal.date, '2026-10-09');
+      assert.equal(schedule.lastMeal.date, '2026-10-01');
+      assert.equal(schedule.nextDate, addDays('2026-10-09', frequency));
+      assert.equal(schedule.due, false);
+      saved.history.unshift(event('repas', '2026-10-10'));
+      const afterMeal = getFeedingSchedule(saved, '2026-10-10');
+      assert.equal(afterMeal.lastMeal.date, '2026-10-10');
+      assert.equal(afterMeal.lastRefusal.date, '2026-10-09');
+      assert.equal(afterMeal.nextDate, addDays('2026-10-10', frequency));
+    }
+  }
+});
+
+test('last refusal uses the latest applicable date and reflects edits and deletion', () => {
+  const a = animal([
+    event('refus_repas', '2026-10-02'),
+    event('refus_repas', '2026-10-09'),
+    event('refus_repas', '2026-12-01')
+  ]);
+  assert.equal(getFeedingSchedule(a, '2026-10-09').lastRefusal.date, '2026-10-09');
+  a.history[1].date = '2026-10-01';
+  assert.equal(getFeedingSchedule(a, '2026-10-09').lastRefusal.date, '2026-10-02');
+  a.history.splice(0, 2);
+  assert.equal(getFeedingSchedule(a, '2026-10-09').lastRefusal, undefined);
+});
+
 test('observing a shed sets exactly 14 days even with a longer normal interval', () => {
   const a = animal([event('debut_mue', '2026-10-09'), event('repas', '2026-10-08')], 30);
   assert.equal(getFeedingSchedule(a, '2026-10-09').nextDate, '2026-10-23');
