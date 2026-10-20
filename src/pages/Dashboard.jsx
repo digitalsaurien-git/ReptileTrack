@@ -5,7 +5,7 @@ import { Snake } from '../components/icons/Snake';
 import { useNavigate } from 'react-router-dom';
 import { speciesList } from '../data/species';
 import { sortAlphabetically } from '../utils/sortingUtils';
-import { getFeedingSchedule, CARE_EVENT_LABELS } from '../utils/feedingSchedule';
+import { getFeedingSchedule, getLoanStatus, CARE_EVENT_LABELS } from '../utils/feedingSchedule';
 
 export function Dashboard() {
   const { animals, terrariums, equipments, settings } = useAppContext();
@@ -13,6 +13,9 @@ export function Dashboard() {
 
   const totalCostDay = equipments.reduce((sum, e) => sum + calculateDailyCost(e.watts, e.hoursPerDay, settings.kwhPrice), 0);
   
+  const isPresent = a => !getLoanStatus(a).onLoan && (!a.status || ['vivant', 'malade'].includes(a.status));
+  const presentAnimals = animals.filter(isPresent);
+  const loanCount = animals.filter(a => getLoanStatus(a).onLoan).length;
   const animalsToFeed = animals.filter(a => getFeedingSchedule(a).due);
 
   const sortedAnimalsToFeed = sortAlphabetically(animalsToFeed, a => a.nickname || a.commonName || '');
@@ -21,7 +24,7 @@ export function Dashboard() {
     (a.history || []).map(event => ({ ...event, animalName: a.nickname || a.commonName || 'Inconnu', animalId: a.id }))
   ).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 6);
 
-  const familyDistribution = animals.reduce((acc, curr) => {
+  const familyDistribution = presentAnimals.reduce((acc, curr) => {
     // Priorité à la famille enregistrée sur l'animal (Nouveau Système)
     let family = curr.family;
 
@@ -79,8 +82,18 @@ export function Dashboard() {
             <TrendingUp size={16} color="var(--primary)" />
           </div>
           <div>
-            <h2 style={{ fontSize: '2.5rem', margin: 0 }}>{animals.length}</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>Specimens enregistrés</p>
+            <h2 style={{ fontSize: '2.5rem', margin: 0 }}>{presentAnimals.length}</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>Animaux présents · ${animals.length} enregistrés</p>
+          </div>
+        </div>
+
+        <div className="glass-card" onClick={() => navigate('/animals?presence=loan')} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderLeft: '4px solid #f59e0b', cursor: 'pointer' }}>
+          <div style={{ background: 'rgba(245, 158, 11, 0.1)', padding: '0.75rem', borderRadius: '12px', width: 'fit-content' }}>
+            <Snake size={24} color="#f59e0b" />
+          </div>
+          <div>
+            <h2 style={{ fontSize: '2.5rem', margin: 0 }}>{loanCount}</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>Animaux en prêt</p>
           </div>
         </div>
 
