@@ -60,7 +60,11 @@ export function getFeedingSchedule(animal, today = localDateKey()) {
   const dayOf = event => event?.date.slice(0, 10);
   const frequency = Number(animal.feedingFrequency);
   const configured = Number.isInteger(frequency) && frequency > 0;
-  const lastMeal = history.find(event => event.type === 'repas');
+  const loggedMeal = history.find(event => event.type === 'repas');
+  const reportedMeal = history.find(event => event.type === 'retour_pret' && event.lastMealDate && event.lastMealDate <= today);
+  const lastMeal = reportedMeal && (!loggedMeal || reportedMeal.lastMealDate > loggedMeal.date.slice(0, 10))
+    ? { date: reportedMeal.lastMealDate, type: 'repas_exterieur', notes: 'Dernier repas déclaré au retour de prêt.' }
+    : loggedMeal;
   const lastRefusal = history.find(event => event.type === 'refus_repas');
   const loanStatus = getLoanStatus(animal, today);
   const lastSchedulingEvent = history.find(event => ['repas', 'refus_repas', 'debut_mue', 'debut_hivernage', 'fin_hivernage', 'retour_pret'].includes(event.type));
