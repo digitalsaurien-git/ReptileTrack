@@ -6,13 +6,14 @@ import { Snake } from '../components/icons/Snake' ;
 import { getPlaceholderImage } from '../utils/imageUtils';
 import { speciesList } from '../data/species';
 import { sortAlphabetically } from '../utils/sortingUtils';
-import { feedingLabels, getFeedingSchedule, localDateKey } from '../utils/feedingSchedule';
+import { feedingLabels, getFeedingSchedule, getLoanStatus, localDateKey } from '../utils/feedingSchedule';
 
 export function Animals() {
   const { animals, setAnimals, foods, setFoods } = useAppContext();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
+  const [presenceFilter, setPresenceFilter] = useState('present');
   const [viewMode, setViewMode] = useState(localStorage.getItem('reptiltrack_viewmode') || 'gallery');
   
   const handleViewModeChange = (mode) => {
@@ -22,7 +23,12 @@ export function Animals() {
 
   const familyFilter = searchParams.get('family');
   
+  const isPresent = a => !getLoanStatus(a).onLoan && (!a.status || ['vivant', 'malade'].includes(a.status));
+  const presentCount = animals.filter(isPresent).length;
+  const loanCount = animals.filter(a => getLoanStatus(a).onLoan).length;
   const filteredAnimals = animals.filter(a => {
+    if (presenceFilter === 'present' && !isPresent(a)) return false;
+    if (presenceFilter === 'loan' && !getLoanStatus(a).onLoan) return false;
     const matchesSearch = (
       a.nickname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       a.commonName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -46,7 +52,7 @@ export function Animals() {
   const handleQuickFeed = async (animal, e) => {
     e.stopPropagation();
     const schedule = getFeedingSchedule(animal);
-    if (schedule.inWinter || schedule.inShed) return;
+    if (schedule.inLoan || schedule.inWinter || schedule.inShed || !isPresent(animal)) return;
     
     if (!animal.defaultFoodId || !animal.defaultFoodQuantity) {
       alert("⚠️ Veuillez configurer la proie habituelle de cet animal dans sa fiche détaillée pour utiliser cette fonction.");
@@ -119,6 +125,11 @@ export function Animals() {
         </button>
       </header>
 
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.25rem' }}>
+        {[['present', `Présents (${presentCount})`], ['loan', `En prêt (${loanCount})`], ['all', `Tous les animaux (${animals.length})`]].map(([value, label]) => (
+          <button key={value} className={`btn ${presenceFilter === value ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPresenceFilter(value)} aria-pressed={presenceFilter === value}>{label}</button>
+        ))}
+      </div>
       <div className="glass-panel" style={{ marginBottom: '3rem', padding: '1.25rem 2rem' }}>
         <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', flex: 1, minWidth: '300px' }}>
@@ -198,6 +209,7 @@ export function Animals() {
                 <div>
                   <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-bright)', marginBottom: '0.1rem', textTransform: 'uppercase' }}>
                     {animal.nickname || animal.commonName || 'Specimen'}
+                    {getLoanStatus(animal).onLoan && <span className="badge" style={{ marginLeft: '0.5rem', background: '#f59e0b', color: '#171717' }}>EN PRÊT</span>}
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                     {animal.nickname ? animal.commonName : (animal.scientificName || 'Espèce inconnue')}
@@ -211,8 +223,8 @@ export function Animals() {
                   onClick={(e) => handleQuickFeed(animal, e)}
                   style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderColor: 'rgba(255, 107, 0, 0.4)', color: '#ff6b00', background: 'rgba(255, 107, 0, 0.05)' }}
                   aria-label={feedingLabels(animal).fed}
-                  title={getFeedingSchedule(animal).inWinter ? 'En hivernage : repas suspendus' : getFeedingSchedule(animal).inShed ? 'En mue : repas suspendus' : feedingLabels(animal).fed}
-                  disabled={getFeedingSchedule(animal).inWinter || getFeedingSchedule(animal).inShed}
+                  title={getLoanStatus(animal).onLoan ? 'En prêt : repas suspendus' : getFeedingSchedule(animal).inWinter ? 'En hivernage : repas suspendus' : getFeedingSchedule(animal).inShed ? 'En mue : repas suspendus' : feedingLabels(animal).fed}
+                  disabled={!isPresent(animal) || getFeedingSchedule(animal).inWinter || getFeedingSchedule(animal).inShed}
                 >
                   <Utensils size={15} /> 
                   <span className="hide-mobile">{feedingLabels(animal).fed}</span>
@@ -240,11 +252,11 @@ export function Animals() {
                 />
                 <span className="badge" style={{ 
                   position: 'absolute', top: '1rem', right: '1rem',
-                  background: animal.status === 'vivant' ? 'rgba(78, 222, 163, 0.9)' : 'rgba(255,255,255,0.8)', 
-                  color: animal.status === 'vivant' ? 'var(--text-on-primary)' : '#333',
+                  background: getLoanStatus(animal).onLoan ? '#f59e0b' : animal.status === 'vivant' ? 'rgba(78, 222, 163, 0.9)' : 'rgba(255,255,255,0.8)', 
+                  color: getLoanStatus(animal).onLoan ? '#171717' : animal.status === 'vivant' ? 'var(--text-on-primary)' : '#333',
                   fontSize: '0.65rem'
                 }}>
-                  {animal.status || 'vivant'}
+                  {getLoanStatus(animal).onLoan ? 'EN PRÊT' : (animal.status || 'vivant')}
                 </span>
               </div>
               <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
