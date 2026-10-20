@@ -363,6 +363,7 @@ export function AnimalDetail() {
           <h1 style={{ fontSize: '2rem', margin: 0 }}>{animal.commonName || 'Specimen'} {animal.nickname ? `"${animal.nickname}"` : ''}</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Fiche détaillée de l'animal</p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+            {schedule.inLoan && <span className="badge" style={{ background: '#f59e0b', color: '#171717' }}>EN PRÊT · {loanState.loan.borrower || 'Emprunteur non renseigné'}</span>}
             {schedule.inShed && <span className="badge">En mue jusqu’au {formatCareDate(schedule.shedUntil)}</span>}
             {schedule.inWinter && <span className="badge">En hivernage jusqu’au {formatCareDate(schedule.winterUntil)}</span>}
           </div>
@@ -417,17 +418,24 @@ export function AnimalDetail() {
               {lastMealDate ? lastMealDate.toLocaleDateString('fr-FR') : 'Non enregistré'}
             </div>
             <div style={{ color: 'var(--primary)', marginTop: '0.5rem' }} role="status">
-              {schedule.inWinter || schedule.inShed ? 'Relances suspendues. ' : ''}
-              {schedule.configured
-                ? schedule.nextDate ? `Prochain repas proposé le ${formatCareDate(schedule.nextDate)}` : 'Repas à proposer'
-                : 'Renseigne la fréquence des repas dans Identité.'}
+              {schedule.inLoan ? 'Animal en prêt : nourrissage et relances suspendus.'
+                : schedule.needsFeedingReview ? 'Retour de prêt : date du dernier repas à vérifier avant de reprendre les relances.'
+                : schedule.inWinter || schedule.inShed ? 'Relances suspendues. '
+                : schedule.configured
+                  ? schedule.nextDate ? `Prochain repas proposé le ${formatCareDate(schedule.nextDate)}` : 'Repas à proposer'
+                  : 'Renseigne la fréquence des repas dans Identité.'}
             </div>
+            {schedule.lastRefusal && (
+              <div style={{ marginTop: '0.5rem', color: 'var(--warning)', fontSize: '0.9rem', fontWeight: 650 }}>
+                Dernier repas refusé le {formatCareDate(schedule.lastRefusal.date.slice(0, 10))}
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <button onClick={handleFeedNow} disabled={schedule.inWinter || schedule.inShed} className="btn btn-primary">
+            <button onClick={handleFeedNow} disabled={schedule.inLoan || schedule.inWinter || schedule.inShed} className="btn btn-primary">
               🍖 {labels.fed}
             </button>
-            <button onClick={() => handleCareAction('refus_repas')} disabled={!schedule.configured || schedule.inWinter || schedule.inShed} className="btn btn-secondary">
+            <button onClick={() => handleCareAction('refus_repas')} disabled={schedule.inLoan || schedule.inWinter || schedule.inShed} className="btn btn-secondary">
               {labels.refused}
             </button>
           </div>
@@ -439,6 +447,39 @@ export function AnimalDetail() {
           <button className="btn btn-secondary" onClick={() => handleCareAction(schedule.inWinter ? 'fin_hivernage' : 'debut_hivernage')} aria-pressed={schedule.inWinter}>
             {schedule.inWinter ? 'Terminer l’hivernage' : 'En hivernage · 90 jours'}
           </button>
+        </div>
+        <div style={{ borderTop: '1px solid var(--border-light)', marginTop: '1.25rem', paddingTop: '1.25rem' }}>
+          {schedule.inLoan ? (
+            <>
+              <div style={{ marginBottom: '0.75rem', color: 'var(--warning)', fontWeight: 700 }}>
+                En prêt depuis le {formatCareDate(loanState.loan.date.slice(0, 10))} · Chez {loanState.loan.borrower || 'destinataire inconnu'}
+                {loanState.loan.expectedReturnDate ? ` · Retour prévu le ${formatCareDate(loanState.loan.expectedReturnDate)}` : ''}
+              </div>
+              <button className="btn btn-secondary" onClick={() => setShowReturnForm(v => !v)}>Retour de prêt</button>
+              {showReturnForm && (
+                <form onSubmit={handleReturnLoan} style={{ display: 'grid', gap: '0.75rem', marginTop: '1rem' }}>
+                  <label>Date de retour <input type="date" max={localDateKey()} min={loanState.loan.date.slice(0, 10)} required value={returnForm.date} onChange={e => setReturnForm(v => ({ ...v, date: e.target.value }))} /></label>
+                  <label>Dernier repas chez l'emprunteur (facultatif) <input type="date" max={returnForm.date} value={returnForm.lastMealDate} onChange={e => setReturnForm(v => ({ ...v, lastMealDate: e.target.value }))} /></label>
+                  <label>Commentaires <textarea value={returnForm.notes} onChange={e => setReturnForm(v => ({ ...v, notes: e.target.value }))} /></label>
+                  <button type="submit" className="btn btn-primary">Confirmer le retour</button>
+                </form>
+              )}
+            </>
+          ) : (
+            <>
+              <button className="btn btn-secondary" onClick={() => setShowLoanForm(v => !v)}>Mettre en prêt</button>
+              {showLoanForm && (
+                <form onSubmit={handleStartLoan} style={{ display: 'grid', gap: '0.75rem', marginTop: '1rem' }}>
+                  <label>Prêté à <input required value={loanForm.borrower} onChange={e => setLoanForm(v => ({ ...v, borrower: e.target.value }))} placeholder="Nom de l'emprunteur" /></label>
+                  <label>Date de départ <input type="date" required max={localDateKey()} value={loanForm.date} onChange={e => setLoanForm(v => ({ ...v, date: e.target.value }))} /></label>
+                  <label>Motif <select value={loanForm.reason} onChange={e => setLoanForm(v => ({ ...v, reason: e.target.value }))}><option value="reproduction">Reproduction</option><option value="autre">Autre</option></select></label>
+                  <label>Retour prévu (facultatif) <input type="date" min={loanForm.date} value={loanForm.expectedReturnDate} onChange={e => setLoanForm(v => ({ ...v, expectedReturnDate: e.target.value }))} /></label>
+                  <label>Commentaires <textarea value={loanForm.notes} onChange={e => setLoanForm(v => ({ ...v, notes: e.target.value }))} /></label>
+                  <button type="submit" className="btn btn-primary">Confirmer le prêt</button>
+                </form>
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -938,6 +979,7 @@ export function AnimalDetail() {
                       {(item.type === 'mue' || item.type === 'debut_mue') && '🐍'}
                       {item.type === 'refus_repas' && '🍽️'}
                       {(item.type === 'debut_hivernage' || item.type === 'fin_hivernage') && '❄️'}
+                      {(item.type === 'debut_pret' || item.type === 'retour_pret') && '📦'}
                       {item.type === 'pesée' && '⚖️'}
                       {item.type === 'maladie' && '💊'}
                       {item.type === 'autre' && '📝'}
@@ -947,7 +989,7 @@ export function AnimalDetail() {
                         <span className="badge" style={{ background: 'rgba(78, 222, 163, 0.1)', color: 'var(--primary)' }}>{CARE_EVENT_LABELS[item.type] || item.type}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                            <Calendar size={12} /> {new Date(item.date).toLocaleDateString()}
+                            <Calendar size={12} /> {formatCareDate(item.date.slice(0, 10))}
                           </span>
                           <div style={{ display: 'flex', gap: '0.5rem' }}>
                             <button 
