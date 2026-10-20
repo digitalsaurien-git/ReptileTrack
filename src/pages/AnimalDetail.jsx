@@ -20,7 +20,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { sortAlphabetically } from '../utils/sortingUtils';
-import { getFeedingSchedule, feedingLabels, createCareEvent, localDateKey, formatCareDate, CARE_EVENT_LABELS } from '../utils/feedingSchedule';
+import { getFeedingSchedule, feedingLabels, createCareEvent, localDateKey, formatCareDate, CARE_EVENT_LABELS, getLoanStatus, createLoanEvent } from '../utils/feedingSchedule';
 
 ChartJS.register(
   CategoryScale,
@@ -55,6 +55,10 @@ export function AnimalDetail() {
     weightUnit: 'g' 
   });
   const [newDoc, setNewDoc] = useState({ name: '', type: 'facture', date: localDateKey(), ref: '' });
+  const [showLoanForm, setShowLoanForm] = useState(false);
+  const [loanForm, setLoanForm] = useState({ date: localDateKey(), borrower: '', reason: 'reproduction', expectedReturnDate: '', notes: '' });
+  const [showReturnForm, setShowReturnForm] = useState(false);
+  const [returnForm, setReturnForm] = useState({ date: localDateKey(), lastMealDate: '', notes: '' });
 
   const [isSending, setIsSending] = useState(false);
 
@@ -86,8 +90,8 @@ export function AnimalDetail() {
   const handleAddEvent = async (e) => {
     e.preventDefault();
     if (!newEvent.date || !newEvent.type) return;
-    if (newEvent.type === 'refus_repas' && !getFeedingSchedule(animal).configured) {
-      alert('Renseigne la fréquence des repas dans Identité avant de noter un refus.');
+    if (['repas', 'refus_repas'].includes(newEvent.type) && getLoanStatus(animal, newEvent.date).onLoan) {
+      alert('Animal en prêt à cette date : le nourrissage est géré par l\'emprunteur.');
       return;
     }
     
@@ -238,19 +242,51 @@ export function AnimalDetail() {
   };
 
   const schedule = getFeedingSchedule(animal);
+  const loanState = getLoanStatus(animal);
   const labels = feedingLabels(animal);
   const lastMealDate = schedule.lastMeal ? new Date(`${schedule.lastMeal.date.slice(0, 10)}T12:00:00`) : null;
 
   const handleCareAction = (type) => {
-    if (type === 'refus_repas' && !schedule.configured) return;
+    if (schedule.inLoan || schedule.inWinter || schedule.inShed) return;
     const event = createCareEvent(animal, type);
     const updatedAnimal = { ...animal, history: [event, ...(animal.history || [])] };
     setAnimal(updatedAnimal);
     setAnimals(current => current.map(a => a.id === id ? updatedAnimal : a));
   };
 
+  const handleStartLoan = (e) => {
+    e.preventDefault();
+    if (!loanForm.borrower.trim() || !loanForm.date || loanForm.date > localDateKey()) return;
+    if (loanForm.expectedReturnDate && loanForm.expectedReturnDate < loanForm.date) {
+      alert('La date de retour prévue ne peut pas précéder le départ.');
+      return;
+    }
+    const event = createLoanEvent('debut_pret', { ...loanForm, borrower: loanForm.borrower.trim() });
+    const updated = { ...animal, history: [event, ...(animal.history || [])] };
+    setAnimal(updated);
+    setAnimals(current => current.map(a => a.id === id ? updated : a));
+    setShowLoanForm(false);
+  };
+
+  const handleReturnLoan = (e) => {
+    e.preventDefault();
+    if (!returnForm.date || returnForm.date > localDateKey() || returnForm.date < loanState.loan.date.slice(0, 10)) {
+      alert('La date du retour doit être comprise entre le départ et aujourd\'hui.');
+      return;
+    }
+    if (returnForm.lastMealDate && returnForm.lastMealDate > returnForm.date) {
+      alert('Le dernier repas ne peut pas être postérieur au retour.');
+      return;
+    }
+    const event = createLoanEvent('retour_pret', returnForm);
+    const updated = { ...animal, history: [event, ...(animal.history || [])] };
+    setAnimal(updated);
+    setAnimals(current => current.map(a => a.id === id ? updated : a));
+    setShowReturnForm(false);
+  };
+
   const handleFeedNow = async () => {
-    if (schedule.inWinter || schedule.inShed) return;
+    if (schedule.inLoan || schedule.inWinter || schedule.inShed) return;
     if (!animal.defaultFoodId) {
       alert("⚠️ Veuillez configurer la proie habituelle de cet animal (onglet Identité) pour utiliser cette fonction.");
       return;
