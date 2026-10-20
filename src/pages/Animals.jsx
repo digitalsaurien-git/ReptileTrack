@@ -13,7 +13,7 @@ export function Animals() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
-  const [presenceFilter, setPresenceFilter] = useState('present');
+  const [presenceFilter, setPresenceFilter] = useState(() => ['present', 'loan', 'all'].includes(searchParams.get('presence')) ? searchParams.get('presence') : 'present');
   const [viewMode, setViewMode] = useState(localStorage.getItem('reptiltrack_viewmode') || 'gallery');
   
   const handleViewModeChange = (mode) => {
