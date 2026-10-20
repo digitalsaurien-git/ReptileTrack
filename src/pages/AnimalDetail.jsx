@@ -59,6 +59,7 @@ export function AnimalDetail() {
   const [loanForm, setLoanForm] = useState({ date: localDateKey(), borrower: '', reason: 'reproduction', expectedReturnDate: '', notes: '' });
   const [showReturnForm, setShowReturnForm] = useState(false);
   const [returnForm, setReturnForm] = useState({ date: localDateKey(), lastMealDate: '', notes: '' });
+  const [remoteMealCorrection, setRemoteMealCorrection] = useState('');
 
   const [isSending, setIsSending] = useState(false);
 
@@ -186,6 +187,10 @@ export function AnimalDetail() {
   };
 
   const handleEditEvent = (event) => {
+    if (['debut_pret', 'retour_pret'].includes(event.type)) {
+      alert('Les dates de prêt et de retour se corrigent depuis les actions de prêt, ou en supprimant puis recréant une opération.');
+      return;
+    }
     setNewEvent({
       ...event,
       date: event.date.split('T')[0] // S'assurer du format pour l'input date
@@ -283,6 +288,20 @@ export function AnimalDetail() {
     setAnimal(updated);
     setAnimals(current => current.map(a => a.id === id ? updated : a));
     setShowReturnForm(false);
+  };
+
+  const handleCompleteReturnMeal = (e) => {
+    e.preventDefault();
+    if (!loanState.lastReturn || !remoteMealCorrection || remoteMealCorrection > loanState.lastReturn.date.slice(0, 10)) return;
+    const updatedHistory = (animal.history || []).map(entry => (
+      entry.id === loanState.lastReturn.id
+        ? { ...entry, lastMealDate: remoteMealCorrection, notes: `Retour de prêt. Dernier repas chez l'emprunteur le ${formatCareDate(remoteMealCorrection)}.` }
+        : entry
+    ));
+    const updated = { ...animal, history: updatedHistory };
+    setAnimal(updated);
+    setAnimals(current => current.map(a => a.id === id ? updated : a));
+    setRemoteMealCorrection('');
   };
 
   const handleFeedNow = async () => {
@@ -413,7 +432,7 @@ export function AnimalDetail() {
       <div className="no-print glass-panel" style={{ marginBottom: '2rem', padding: '1.5rem' }}>
         <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
           <div>
-            <div style={{ color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Dernier repas pris</div>
+            <div style={{ color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Dernier repas connu</div>
             <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>
               {lastMealDate ? lastMealDate.toLocaleDateString('fr-FR') : 'Non enregistré'}
             </div>
@@ -441,10 +460,10 @@ export function AnimalDetail() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '1rem' }}>
-          <button className="btn btn-secondary" onClick={() => handleCareAction('debut_mue')} disabled={schedule.inShed}>
+          <button className="btn btn-secondary" onClick={() => handleCareAction('debut_mue')} disabled={schedule.inLoan || schedule.inShed}>
             En mue · 14 jours
           </button>
-          <button className="btn btn-secondary" onClick={() => handleCareAction(schedule.inWinter ? 'fin_hivernage' : 'debut_hivernage')} aria-pressed={schedule.inWinter}>
+          <button className="btn btn-secondary" onClick={() => handleCareAction(schedule.inWinter ? 'fin_hivernage' : 'debut_hivernage')} aria-pressed={schedule.inWinter} disabled={schedule.inLoan}>
             {schedule.inWinter ? 'Terminer l’hivernage' : 'En hivernage · 90 jours'}
           </button>
         </div>
@@ -467,6 +486,14 @@ export function AnimalDetail() {
             </>
           ) : (
             <>
+              {schedule.needsFeedingReview && loanState.lastReturn && (
+                <form onSubmit={handleCompleteReturnMeal} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'end', marginBottom: '1rem' }}>
+                  <label>Dernier repas pendant le prêt
+                    <input type="date" required max={loanState.lastReturn.date.slice(0, 10)} value={remoteMealCorrection} onChange={e => setRemoteMealCorrection(e.target.value)} />
+                  </label>
+                  <button className="btn btn-primary" type="submit">Reprendre le suivi alimentaire</button>
+                </form>
+              )}
               <button className="btn btn-secondary" onClick={() => setShowLoanForm(v => !v)}>Mettre en prêt</button>
               {showLoanForm && (
                 <form onSubmit={handleStartLoan} style={{ display: 'grid', gap: '0.75rem', marginTop: '1rem' }}>
