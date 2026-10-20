@@ -20,7 +20,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { sortAlphabetically } from '../utils/sortingUtils';
-import { getFeedingSchedule, feedingLabels, createCareEvent, localDateKey, formatCareDate, CARE_EVENT_LABELS } from '../utils/feedingSchedule';
+import { getFeedingSchedule, feedingLabels, createCareEvent, localDateKey, formatCareDate, CARE_EVENT_LABELS, getLoanStatus, createLoanEvent } from '../utils/feedingSchedule';
 
 ChartJS.register(
   CategoryScale,
@@ -55,6 +55,11 @@ export function AnimalDetail() {
     weightUnit: 'g' 
   });
   const [newDoc, setNewDoc] = useState({ name: '', type: 'facture', date: localDateKey(), ref: '' });
+  const [showLoanForm, setShowLoanForm] = useState(false);
+  const [loanForm, setLoanForm] = useState({ date: localDateKey(), borrower: '', reason: 'reproduction', expectedReturnDate: '', notes: '' });
+  const [showReturnForm, setShowReturnForm] = useState(false);
+  const [returnForm, setReturnForm] = useState({ date: localDateKey(), lastMealDate: '', notes: '' });
+  const [remoteMealCorrection, setRemoteMealCorrection] = useState('');
 
   const [isSending, setIsSending] = useState(false);
 
@@ -86,8 +91,8 @@ export function AnimalDetail() {
   const handleAddEvent = async (e) => {
     e.preventDefault();
     if (!newEvent.date || !newEvent.type) return;
-    if (newEvent.type === 'refus_repas' && !getFeedingSchedule(animal).configured) {
-      alert('Renseigne la fréquence des repas dans Identité avant de noter un refus.');
+    if (['repas', 'refus_repas'].includes(newEvent.type) && getLoanStatus(animal, newEvent.date).onLoan) {
+      alert('Animal en prêt à cette date : le nourrissage est géré par l\'emprunteur.');
       return;
     }
     
@@ -182,6 +187,10 @@ export function AnimalDetail() {
   };
 
   const handleEditEvent = (event) => {
+    if (['debut_pret', 'retour_pret'].includes(event.type)) {
+      alert('Les dates de prêt et de retour se corrigent depuis les actions de prêt, ou en supprimant puis recréant une opération.');
+      return;
+    }
     setNewEvent({
       ...event,
       date: event.date.split('T')[0] // S'assurer du format pour l'input date
@@ -238,19 +247,65 @@ export function AnimalDetail() {
   };
 
   const schedule = getFeedingSchedule(animal);
+  const loanState = getLoanStatus(animal);
   const labels = feedingLabels(animal);
   const lastMealDate = schedule.lastMeal ? new Date(`${schedule.lastMeal.date.slice(0, 10)}T12:00:00`) : null;
 
   const handleCareAction = (type) => {
-    if (type === 'refus_repas' && !schedule.configured) return;
+    if (schedule.inLoan || schedule.inWinter || schedule.inShed) return;
     const event = createCareEvent(animal, type);
     const updatedAnimal = { ...animal, history: [event, ...(animal.history || [])] };
     setAnimal(updatedAnimal);
     setAnimals(current => current.map(a => a.id === id ? updatedAnimal : a));
   };
 
+  const handleStartLoan = (e) => {
+    e.preventDefault();
+    if (!loanForm.borrower.trim() || !loanForm.date || loanForm.date > localDateKey()) return;
+    if (loanForm.expectedReturnDate && loanForm.expectedReturnDate < loanForm.date) {
+      alert('La date de retour prévue ne peut pas précéder le départ.');
+      return;
+    }
+    const event = createLoanEvent('debut_pret', { ...loanForm, borrower: loanForm.borrower.trim() });
+    const updated = { ...animal, history: [event, ...(animal.history || [])] };
+    setAnimal(updated);
+    setAnimals(current => current.map(a => a.id === id ? updated : a));
+    setShowLoanForm(false);
+  };
+
+  const handleReturnLoan = (e) => {
+    e.preventDefault();
+    if (!returnForm.date || returnForm.date > localDateKey() || returnForm.date < loanState.loan.date.slice(0, 10)) {
+      alert('La date du retour doit être comprise entre le départ et aujourd\'hui.');
+      return;
+    }
+    if (returnForm.lastMealDate && returnForm.lastMealDate > returnForm.date) {
+      alert('Le dernier repas ne peut pas être postérieur au retour.');
+      return;
+    }
+    const event = createLoanEvent('retour_pret', returnForm);
+    const updated = { ...animal, history: [event, ...(animal.history || [])] };
+    setAnimal(updated);
+    setAnimals(current => current.map(a => a.id === id ? updated : a));
+    setShowReturnForm(false);
+  };
+
+  const handleCompleteReturnMeal = (e) => {
+    e.preventDefault();
+    if (!loanState.lastReturn || !remoteMealCorrection || remoteMealCorrection > loanState.lastReturn.date.slice(0, 10)) return;
+    const updatedHistory = (animal.history || []).map(entry => (
+      entry.id === loanState.lastReturn.id
+        ? { ...entry, lastMealDate: remoteMealCorrection, notes: `Retour de prêt. Dernier repas chez l'emprunteur le ${formatCareDate(remoteMealCorrection)}.` }
+        : entry
+    ));
+    const updated = { ...animal, history: updatedHistory };
+    setAnimal(updated);
+    setAnimals(current => current.map(a => a.id === id ? updated : a));
+    setRemoteMealCorrection('');
+  };
+
   const handleFeedNow = async () => {
-    if (schedule.inWinter || schedule.inShed) return;
+    if (schedule.inLoan || schedule.inWinter || schedule.inShed) return;
     if (!animal.defaultFoodId) {
       alert("⚠️ Veuillez configurer la proie habituelle de cet animal (onglet Identité) pour utiliser cette fonction.");
       return;
@@ -327,6 +382,7 @@ export function AnimalDetail() {
           <h1 style={{ fontSize: '2rem', margin: 0 }}>{animal.commonName || 'Specimen'} {animal.nickname ? `"${animal.nickname}"` : ''}</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Fiche détaillée de l'animal</p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+            {schedule.inLoan && <span className="badge" style={{ background: '#f59e0b', color: '#171717' }}>EN PRÊT · {loanState.loan.borrower || 'Emprunteur non renseigné'}</span>}
             {schedule.inShed && <span className="badge">En mue jusqu’au {formatCareDate(schedule.shedUntil)}</span>}
             {schedule.inWinter && <span className="badge">En hivernage jusqu’au {formatCareDate(schedule.winterUntil)}</span>}
           </div>
@@ -376,33 +432,81 @@ export function AnimalDetail() {
       <div className="no-print glass-panel" style={{ marginBottom: '2rem', padding: '1.5rem' }}>
         <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
           <div>
-            <div style={{ color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Dernier repas pris</div>
+            <div style={{ color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Dernier repas connu</div>
             <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>
               {lastMealDate ? lastMealDate.toLocaleDateString('fr-FR') : 'Non enregistré'}
             </div>
             <div style={{ color: 'var(--primary)', marginTop: '0.5rem' }} role="status">
-              {schedule.inWinter || schedule.inShed ? 'Relances suspendues. ' : ''}
-              {schedule.configured
-                ? schedule.nextDate ? `Prochain repas proposé le ${formatCareDate(schedule.nextDate)}` : 'Repas à proposer'
-                : 'Renseigne la fréquence des repas dans Identité.'}
+              {schedule.inLoan ? 'Animal en prêt : nourrissage et relances suspendus.'
+                : schedule.needsFeedingReview ? 'Retour de prêt : date du dernier repas à vérifier avant de reprendre les relances.'
+                : schedule.inWinter || schedule.inShed ? 'Relances suspendues. '
+                : schedule.configured
+                  ? schedule.nextDate ? `Prochain repas proposé le ${formatCareDate(schedule.nextDate)}` : 'Repas à proposer'
+                  : 'Renseigne la fréquence des repas dans Identité.'}
             </div>
+            {schedule.lastRefusal && (
+              <div style={{ marginTop: '0.5rem', color: 'var(--warning)', fontSize: '0.9rem', fontWeight: 650 }}>
+                Dernier repas refusé le {formatCareDate(schedule.lastRefusal.date.slice(0, 10))}
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <button onClick={handleFeedNow} disabled={schedule.inWinter || schedule.inShed} className="btn btn-primary">
+            <button onClick={handleFeedNow} disabled={schedule.inLoan || schedule.inWinter || schedule.inShed} className="btn btn-primary">
               🍖 {labels.fed}
             </button>
-            <button onClick={() => handleCareAction('refus_repas')} disabled={!schedule.configured || schedule.inWinter || schedule.inShed} className="btn btn-secondary">
+            <button onClick={() => handleCareAction('refus_repas')} disabled={schedule.inLoan || schedule.inWinter || schedule.inShed} className="btn btn-secondary">
               {labels.refused}
             </button>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '1rem' }}>
-          <button className="btn btn-secondary" onClick={() => handleCareAction('debut_mue')} disabled={schedule.inShed}>
+          <button className="btn btn-secondary" onClick={() => handleCareAction('debut_mue')} disabled={schedule.inLoan || schedule.inShed}>
             En mue · 14 jours
           </button>
-          <button className="btn btn-secondary" onClick={() => handleCareAction(schedule.inWinter ? 'fin_hivernage' : 'debut_hivernage')} aria-pressed={schedule.inWinter}>
+          <button className="btn btn-secondary" onClick={() => handleCareAction(schedule.inWinter ? 'fin_hivernage' : 'debut_hivernage')} aria-pressed={schedule.inWinter} disabled={schedule.inLoan}>
             {schedule.inWinter ? 'Terminer l’hivernage' : 'En hivernage · 90 jours'}
           </button>
+        </div>
+        <div style={{ borderTop: '1px solid var(--border-light)', marginTop: '1.25rem', paddingTop: '1.25rem' }}>
+          {schedule.inLoan ? (
+            <>
+              <div style={{ marginBottom: '0.75rem', color: 'var(--warning)', fontWeight: 700 }}>
+                En prêt depuis le {formatCareDate(loanState.loan.date.slice(0, 10))} · Chez {loanState.loan.borrower || 'destinataire inconnu'}
+                {loanState.loan.expectedReturnDate ? ` · Retour prévu le ${formatCareDate(loanState.loan.expectedReturnDate)}` : ''}
+              </div>
+              <button className="btn btn-secondary" onClick={() => setShowReturnForm(v => !v)}>Retour de prêt</button>
+              {showReturnForm && (
+                <form onSubmit={handleReturnLoan} style={{ display: 'grid', gap: '0.75rem', marginTop: '1rem' }}>
+                  <label>Date de retour <input type="date" max={localDateKey()} min={loanState.loan.date.slice(0, 10)} required value={returnForm.date} onChange={e => setReturnForm(v => ({ ...v, date: e.target.value }))} /></label>
+                  <label>Dernier repas chez l'emprunteur (facultatif) <input type="date" max={returnForm.date} value={returnForm.lastMealDate} onChange={e => setReturnForm(v => ({ ...v, lastMealDate: e.target.value }))} /></label>
+                  <label>Commentaires <textarea value={returnForm.notes} onChange={e => setReturnForm(v => ({ ...v, notes: e.target.value }))} /></label>
+                  <button type="submit" className="btn btn-primary">Confirmer le retour</button>
+                </form>
+              )}
+            </>
+          ) : (
+            <>
+              {schedule.needsFeedingReview && loanState.lastReturn && (
+                <form onSubmit={handleCompleteReturnMeal} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'end', marginBottom: '1rem' }}>
+                  <label>Dernier repas pendant le prêt
+                    <input type="date" required max={loanState.lastReturn.date.slice(0, 10)} value={remoteMealCorrection} onChange={e => setRemoteMealCorrection(e.target.value)} />
+                  </label>
+                  <button className="btn btn-primary" type="submit">Reprendre le suivi alimentaire</button>
+                </form>
+              )}
+              <button className="btn btn-secondary" onClick={() => setShowLoanForm(v => !v)}>Mettre en prêt</button>
+              {showLoanForm && (
+                <form onSubmit={handleStartLoan} style={{ display: 'grid', gap: '0.75rem', marginTop: '1rem' }}>
+                  <label>Prêté à <input required value={loanForm.borrower} onChange={e => setLoanForm(v => ({ ...v, borrower: e.target.value }))} placeholder="Nom de l'emprunteur" /></label>
+                  <label>Date de départ <input type="date" required max={localDateKey()} value={loanForm.date} onChange={e => setLoanForm(v => ({ ...v, date: e.target.value }))} /></label>
+                  <label>Motif <select value={loanForm.reason} onChange={e => setLoanForm(v => ({ ...v, reason: e.target.value }))}><option value="reproduction">Reproduction</option><option value="autre">Autre</option></select></label>
+                  <label>Retour prévu (facultatif) <input type="date" min={loanForm.date} value={loanForm.expectedReturnDate} onChange={e => setLoanForm(v => ({ ...v, expectedReturnDate: e.target.value }))} /></label>
+                  <label>Commentaires <textarea value={loanForm.notes} onChange={e => setLoanForm(v => ({ ...v, notes: e.target.value }))} /></label>
+                  <button type="submit" className="btn btn-primary">Confirmer le prêt</button>
+                </form>
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -902,6 +1006,7 @@ export function AnimalDetail() {
                       {(item.type === 'mue' || item.type === 'debut_mue') && '🐍'}
                       {item.type === 'refus_repas' && '🍽️'}
                       {(item.type === 'debut_hivernage' || item.type === 'fin_hivernage') && '❄️'}
+                      {(item.type === 'debut_pret' || item.type === 'retour_pret') && '📦'}
                       {item.type === 'pesée' && '⚖️'}
                       {item.type === 'maladie' && '💊'}
                       {item.type === 'autre' && '📝'}
@@ -911,7 +1016,7 @@ export function AnimalDetail() {
                         <span className="badge" style={{ background: 'rgba(78, 222, 163, 0.1)', color: 'var(--primary)' }}>{CARE_EVENT_LABELS[item.type] || item.type}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                            <Calendar size={12} /> {new Date(item.date).toLocaleDateString()}
+                            <Calendar size={12} /> {formatCareDate(item.date.slice(0, 10))}
                           </span>
                           <div style={{ display: 'flex', gap: '0.5rem' }}>
                             <button 

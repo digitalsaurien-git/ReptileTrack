@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getFeedingSchedule, feedingLabels, createCareEvent, addDays, localDateKey } from '../src/utils/feedingSchedule.js';
+import { getFeedingSchedule, feedingLabels, createCareEvent, createLoanEvent, getLoanStatus, addDays, localDateKey } from '../src/utils/feedingSchedule.js';
 
 const event = (type, date) => ({ type, date });
 const animal = (history = [], frequency = 7) => ({ sex: 'femelle', feedingFrequency: frequency, history });
@@ -101,4 +101,46 @@ test('calendar dates cross DST/month/year/leap boundaries without drifting', () 
   assert.equal(addDays('2028-02-28', 1), '2028-02-29');
   const date = new Date(2026, 9, 9, 0, 15);
   assert.equal(localDateKey(date), '2026-10-09');
+});
+
+test('sex indéterminé : le refus reste enregistrable et daté même sans fréquence', () => {
+  const entry = createCareEvent({ sex: 'inconnu' }, 'refus_repas', '2026-10-20');
+  assert.equal(entry.type, 'refus_repas');
+  assert.equal(entry.date, '2026-10-20');
+  assert.match(entry.notes, /Repas refusé le 20\/10\/2026/);
+  assert.match(entry.notes, /aucun report automatique/);
+  const state = getFeedingSchedule({ history: [entry] }, '2026-10-20');
+  assert.equal(state.lastRefusal.date, '2026-10-20');
+  assert.equal(state.due, false);
+});
+
+test('prêt : absence des relances, retour et calcul du dernier repas transmis', () => {
+  const a = animal([createLoanEvent('debut_pret', { date: '2026-10-10', borrower: 'Éleveur', expectedReturnDate: '2026-11-01' })]);
+  assert.equal(getLoanStatus(a, '2026-10-09').onLoan, false);
+  assert.equal(getLoanStatus(a, '2026-10-20').onLoan, true);
+  assert.equal(getLoanStatus(a, '2026-10-20').loan.borrower, 'Éleveur');
+  assert.equal(getFeedingSchedule(a, '2026-10-20').inLoan, true);
+  assert.equal(getFeedingSchedule(a, '2026-10-20').due, false);
+  assert.equal(getFeedingSchedule(a, '2026-10-20').nextDate, null);
+  a.history.unshift(createLoanEvent('retour_pret', { date: '2026-10-20', lastMealDate: '2026-10-17' }));
+  const returned = getFeedingSchedule(a, '2026-10-20');
+  assert.equal(getLoanStatus(a, '2026-10-20').onLoan, false);
+  assert.equal(returned.inLoan, false);
+  assert.equal(returned.nextDate, '2026-10-24');
+  assert.equal(returned.due, false);
+  assert.equal(getFeedingSchedule(a, '2026-10-24').due, true);
+});
+
+test('retour de prêt sans dernier repas : ne pas inventer de date', () => {
+  const a = animal([
+    createLoanEvent('retour_pret', { date: '2026-10-20' }),
+    createLoanEvent('debut_pret', { date: '2026-10-10', borrower: 'Tiers' })
+  ]);
+  assert.equal(getFeedingSchedule(a, '2026-10-20').needsFeedingReview, true);
+  assert.equal(getFeedingSchedule(a, '2026-10-20').due, false);
+  const roundtrip = JSON.parse(JSON.stringify(a));
+  assert.equal(getLoanStatus(roundtrip).onLoan, false);
+  roundtrip.history.unshift(event('repas', '2026-10-20'));
+  assert.equal(getFeedingSchedule(roundtrip, '2026-10-20').needsFeedingReview, false);
+  assert.equal(getFeedingSchedule(roundtrip, '2026-10-27').due, true);
 });
