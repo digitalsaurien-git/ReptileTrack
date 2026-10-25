@@ -6,6 +6,7 @@ import {
   Bone, Activity, FileText, Info, Calendar, ClipboardList,
   Scale, Shield, Truck, Printer, Euro, Zap, Send, Edit2, TrendingUp
 } from 'lucide-react';
+import { reconcileFeedingStock } from '../utils/feedingStock';
 import { getPlaceholderImage } from '../utils/imageUtils';
 import {
   Chart as ChartJS,
@@ -106,27 +107,18 @@ export function AnimalDetail() {
       historyEvent.notes = createCareEvent(animal, newEvent.type, newEvent.date).notes;
     }
 
-    // Gestion du repas et des stocks (simplifiée pour l'ajout/update)
-    // Note: Pour une gestion parfaite du stock lors de l'edit, il faudrait comparer avec l'ancien état,
-    // mais ici on se concentre sur la résolution du bug de duplication demandé.
-    if (newEvent.type === 'repas' && newEvent.foodId) {
-      const selectedFood = foods.find(f => f.id === newEvent.foodId);
-      if (selectedFood) {
-        historyEvent.foodName = selectedFood.name;
-        
-        // Si c'est une création, on décrémente le stock
-        if (!isUpdate) {
-          const remainingStock = selectedFood.stock - newEvent.quantity;
-          const updatedFoods = foods.map(f => 
-            f.id === selectedFood.id ? { ...f, stock: remainingStock } : f
-          );
-          setFoods(updatedFoods);
-
-          if (remainingStock <= selectedFood.alertThreshold) {
-            alert(`⚠️ Le stock de ${selectedFood.name} est faible (${remainingStock} restants).`);
-          }
-        }
+    try {
+      const previousEvent = isUpdate ? animal.history.find(ev => ev.id === newEvent.id) : null;
+      const result = reconcileFeedingStock(foods, historyEvent, previousEvent);
+      historyEvent = result.event;
+      setFoods(result.foods);
+      const selectedFood = result.foods.find(f => f.id === historyEvent.foodId);
+      if (historyEvent.stockDeducted && selectedFood.stock <= selectedFood.alertThreshold) {
+        alert(`⚠️ Le stock de ${selectedFood.name} est faible (${selectedFood.stock} restants).`);
       }
+    } catch (error) {
+      alert(error.message);
+      return;
     }
 
     const updatedHistory = isUpdate 
@@ -165,16 +157,8 @@ export function AnimalDetail() {
     if (!eventToDelete) return;
 
     if (window.confirm("Supprimer cet évènement ?")) {
-      // Restaurer le stock si c'était un repas
-      if (eventToDelete.type === 'repas' && eventToDelete.foodId && eventToDelete.quantity) {
-        const food = foods.find(f => f.id === eventToDelete.foodId);
-        if (food) {
-          const updatedFoods = foods.map(f => 
-            f.id === food.id ? { ...f, stock: f.stock + eventToDelete.quantity } : f
-          );
-          setFoods(updatedFoods);
-        }
-      }
+      // Annulation de la saisie : restituer uniquement les proies réellement décomptées.
+      setFoods(reconcileFeedingStock(foods, null, eventToDelete).foods);
 
       const updatedHistory = animal.history.filter(e => e.id !== eventId);
       const updatedAnimal = { ...animal, history: updatedHistory };
@@ -253,7 +237,29 @@ export function AnimalDetail() {
 
   const handleCareAction = (type) => {
     if (schedule.inLoan || schedule.inWinter || schedule.inShed) return;
-    const event = createCareEvent(animal, type);
+    let event = createCareEvent(animal, type);
+    if (type === 'refus_repas') {
+      if (!animal.defaultFoodId || !foods.some(food => food.id === animal.defaultFoodId)) {
+        setActiveTab('history');
+        setNewEvent({ type, date: localDateKey(), notes: '', foodId: '', quantity: animal.defaultFoodQuantity || 1 });
+        alert('Sélectionnez la proie décongelée et sa quantité dans le journal pour enregistrer le refus et la sortir du stock.');
+        return;
+      }
+      try {
+        const result = reconcileFeedingStock(foods, {
+          ...event, foodId: animal.defaultFoodId, quantity: animal.defaultFoodQuantity || 1
+        });
+        event = result.event;
+        setFoods(result.foods);
+        const food = result.foods.find(item => item.id === event.foodId);
+        if (food.stock <= food.alertThreshold) {
+          alert(`⚠️ Le stock de ${food.name} est faible (${food.stock} restants).`);
+        }
+      } catch (error) {
+        alert(error.message);
+        return;
+      }
+    }
     const updatedAnimal = { ...animal, history: [event, ...(animal.history || [])] };
     setAnimal(updatedAnimal);
     setAnimals(current => current.map(a => a.id === id ? updatedAnimal : a));
@@ -913,11 +919,11 @@ export function AnimalDetail() {
                 </select>
               </div>
 
-              {newEvent.type === 'repas' && (
+              {['repas', 'refus_repas'].includes(newEvent.type) && (
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', background: 'rgba(78, 222, 163, 0.05)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(78, 222, 163, 0.2)' }}>
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>Proie</label>
-                    <select value={newEvent.foodId} onChange={e => setNewEvent({...newEvent, foodId: e.target.value})}>
+                    <select required={newEvent.type === 'refus_repas'} value={newEvent.foodId} onChange={e => setNewEvent({...newEvent, foodId: e.target.value})}>
                       <option value="">Sélectionner une proie...</option>
                       {sortedFoods.map(f => (
                         <option key={f.id} value={f.id}>{f.name} (Stock: {f.stock})</option>
@@ -934,6 +940,12 @@ export function AnimalDetail() {
                     />
                   </div>
                 </div>
+              )}
+
+              {newEvent.type === 'refus_repas' && (
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  Les proies décongelées sont retirées du stock même si le repas est refusé.
+                </p>
               )}
 
               {newEvent.type === 'pesée' && (
@@ -1037,9 +1049,10 @@ export function AnimalDetail() {
                         </div>
                       </div>
                       
-                      {item.type === 'repas' && item.foodName && (
+                      {['repas', 'refus_repas'].includes(item.type) && item.foodName && (
                         <div style={{ marginBottom: '0.5rem', background: 'var(--glass-bg-heavy)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', borderLeft: '2px solid var(--primary)', fontSize: '0.85rem' }}>
                           🍗 <strong>Nourriture:</strong> {item.quantity}x {item.foodName}
+                          {item.type === 'refus_repas' && item.stockDeducted && ' · Proie décongelée, sortie du stock'}
                         </div>
                       )}
 
